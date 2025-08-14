@@ -1,40 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RajuKart - Your E-commerce Destination</title>
-    <link rel="stylesheet" href="style.css"> <!-- We'll create this soon -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RajuKart</title>
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
-    <header>
-        <h1>RajuKart</h1>
-        <nav>
-            <ul>
-                <li><a href="#">Home</a></li>
-                <li><a href="#">Products</a></li>
-                <li><a href="#">Cart</a></li>
-                <li><a href="#">Login</a></li>
-            </ul>
-        </nav>
-    </header>
+  <!-- Header -->
+  <header class="header">
+    <h1>RajuKart</h1>
+    <div id="userInfo" class="user-status">Checking auth…</div>
+    <button id="logoutBtn" class="hidden">Logout</button>
+  </header>
 
-    <main>
-        <h2>Featured Products</h2>
-        <div id="product-list">
-            <!-- Products will be loaded here -->
-        </div>
-        <div id="user-status">
-            <!-- User status (logged in/out) will be displayed here -->
-        </div>
-    </main>
+  <!-- Category Buttons -->
+  <div class="categories">
+    <button class="category-btn active" data-cat="all">All</button>
+    <button class="category-btn" data-cat="electronics">Electronics</button>
+    <button class="category-btn" data-cat="clothing">Clothing</button>
+    <button class="category-btn" data-cat="books">Books</button>
+    <button class="category-btn" data-cat="health">Health</button>
+    <button class="category-btn" data-cat="home">Home</button>
+    <button class="category-btn" data-cat="beauty">Beauty</button>
+    <button class="category-btn" data-cat="toys">Toys</button>
+  </div>
 
-    <footer>
-        <p>&copy; 2024 RajuKart. All rights reserved.</p>
-    </footer>
+  <!-- Search -->
+  <div class="search-bar">
+    <input id="searchInput" type="text" placeholder="Search products..."/>
+    <button>Search</button>
+  </div>
 
-    <!-- Firebase SDK and your main app script -->
-    <!-- These will be automatically loaded from CDN by Firebase App Hosting or from npm later -->
-    <script type="module" src="/scripts/main.js"></script>
+  <!-- Product Grid -->
+  <div id="productCount" class="product-count"></div>
+  <div id="productsGrid" class="products-grid"></div>
+  <button id="loadMoreBtn" class="load-more">Load More</button>
+
+  <!-- Wishlist Modal -->
+  <div id="wishlistModal" class="modal hidden">
+    <h2>Wishlist (<span id="wishlistCount">0</span>)</h2>
+    <div id="wishlistItems"></div>
+    <button data-close-wishlist>Close</button>
+  </div>
+
+  <!-- Cart Modal -->
+  <div id="cartModal" class="modal hidden">
+    <h2>Cart (<span id="cartCount">0</span>)</h2>
+    <div id="cartItems"></div>
+    <div>Total: ₹<span id="cartTotal">0</span></div>
+    <button id="btnCheckout">Checkout</button>
+    <button data-close-cart>Close</button>
+  </div>
+
+  <!-- Order Placement Page -->
+  <div id="orderPlacementPage" class="modal hidden">
+    <h2>Order Summary</h2>
+    <div id="orderSummaryItems"></div>
+    <div>Total: ₹<span id="orderTotal">0</span></div>
+    <button id="placeOrderBtn">Place Order</button>
+    <button id="closeOrderPlacement">Close</button>
+  </div>
+
+  <!-- Tracking Modal -->
+  <div id="orderTrackingModal" class="modal hidden">
+    <h2>Track Order</h2>
+    <div id="orderTrackingContent"></div>
+    <button data-close-track>Close</button>
+  </div>
+
+  <!-- Analytics Modal -->
+  <div id="analyticsModal" class="modal hidden">
+    <h2>Analytics</h2>
+    <div id="analyticsContent">Analytics placeholder</div>
+    <button data-close-analytics>Close</button>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="/main.js"></script>
 </body>
 </html>
