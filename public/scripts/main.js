@@ -10,7 +10,7 @@ const firebaseConfig = {
   authDomain: "rajukart-ae5ca.firebaseapp.com",
   projectId: "rajukart-ae5ca", // This should already be correct
   storageBucket: "rajukart-ae5ca.firebasestorage.app",
-  messagingSenderId: "Y570218176052",
+  messagingSenderId: "570218176052",
   appId: "1:570218176052:web:ea421005352249c160b461",
   measurementId: "G-PGTT4FEZEJ" // If you have Analytics enabled
 };
