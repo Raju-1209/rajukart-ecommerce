@@ -6,13 +6,13 @@ import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gsta
 // Your web app's Firebase configuration
 // IMPORTANT: REPLACE WITH YOUR ACTUAL VALUES from Firebase Console -> Project Settings -> Your Apps (Web App)
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
+  apiKey: "AIzaSyBa7_mkNVlIHQgWYytgXy0sLqkfuS-rVK4",
+  authDomain: "rajukart-ae5ca.firebaseapp.com",
   projectId: "rajukart-ae5ca", // This should already be correct
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
-  measurementId: "YOUR_MEASUREMENT_ID" // If you have Analytics enabled
+  storageBucket: "rajukart-ae5ca.firebasestorage.app",
+  messagingSenderId: "Y570218176052",
+  appId: "1:570218176052:web:ea421005352249c160b461",
+  measurementId: "G-PGTT4FEZEJ" // If you have Analytics enabled
 };
 
 // Initialize Firebase
