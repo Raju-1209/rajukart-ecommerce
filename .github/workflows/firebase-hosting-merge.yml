@@ -11,7 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: npm ci && npm run build
+      - name: Install Functions Dependencies # <--- Make sure this line starts with ONLY 6 spaces before the '-'
+        run: npm ci                       # <--- This line and 'working-directory' need 2 more spaces than '- name:'
+        working-directory: functions/
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
