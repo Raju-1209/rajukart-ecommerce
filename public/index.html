@@ -5,49 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RajuKart - Your E-commerce Destination</title>
     <link rel="stylesheet" href="style.css">
-    <!-- You might use an icon library like Font Awesome here in a real project -->
-    <!-- For now, we'll use simple text or CSS shapes for icons -->
 </head>
 <body>
 
     <!-- Initial Welcome/Login Modal -->
     <div id="auth-modal" class="modal">
-        <div class="modal-content">
-            <div id="welcome-section" class="auth-section">
-                <h2>Welcome to RajuKart!</h2>
-                <p>Please choose an option to continue:</p>
-                <div class="modal-buttons">
-                    <button id="login-button-initial" class="modal-btn">Login</button>
-                    <button id="signup-button-initial" class="modal-btn">Sign Up</button>
-                    <button id="guest-button" class="modal-btn primary-modal-btn">Continue as Guest</button>
+        <div class="modal-outer-wrapper"> <!-- This wrapper handles the full-screen centering -->
+            <div class="modal-content">
+                <div id="welcome-section" class="auth-section">
+                    <h2>Welcome to RajuKart!</h2>
+                    <p>Choose how you'd like to continue</p>
+                    
+                    <div class="modal-buttons">
+                        <button id="guest-button" class="modal-btn gray-btn">
+                            Continue as Guest
+                        </button>
+                        <button id="login-button-initial" class="modal-btn primary-modal-btn">
+                            Login
+                        </button>
+                        <button id="signup-button-initial" class="modal-btn bordered-btn">
+                            Sign Up
+                        </button>
+                    </div>
+                    <p class="modal-info">As a guest, you can browse products. To wishlist or order, please login/signup.</p>
                 </div>
-                <p class="modal-info">As a guest, you can browse products. To wishlist or order, please login/signup.</p>
-            </div>
 
-            <!-- Sign Up Section -->
-            <div id="signup-section" class="auth-section hidden">
-                <h2>Create Your RajuKart Account</h2>
-                <form id="signup-form">
-                    <input type="text" id="signup-fullname" placeholder="Full Name" required>
-                    <input type="email" id="signup-email" placeholder="Email (e.g., example@example.com)" required>
-                    <input type="text" id="signup-username" placeholder="Username (string + numeric)" required>
-                    <input type="password" id="signup-password" placeholder="Password (8+ chars, 1 Upper, 1 Lower, 1 Num, 1 Spec)" required>
-                    <p class="form-error" id="signup-error"></p>
-                    <button type="submit" class="modal-btn primary-modal-btn">Sign Up</button>
-                    <button type="button" class="modal-btn back-to-welcome" data-target="welcome-section">Back</button>
-                </form>
-            </div>
+                <!-- Sign Up Section -->
+                <div id="signup-section" class="auth-section hidden">
+                    <h2>Create Your RajuKart Account</h2>
+                    <form id="signup-form">
+                        <input type="text" id="signup-fullname" placeholder="Full Name" required>
+                        <input type="email" id="signup-email" placeholder="Email (e.g., example@example.com)" required>
+                        <input type="text" id="signup-username" placeholder="Username (string + numeric)" required>
+                        <input type="password" id="signup-password" placeholder="Password (8+ chars, 1 Upper, 1 Lower, 1 Num, 1 Spec)" required>
+                        <p class="form-error" id="signup-error"></p>
+                        <button type="submit" class="modal-btn primary-modal-btn">Sign Up</button>
+                        <button type="button" class="modal-btn back-to-welcome gray-btn" data-target="welcome-section">Back</button>
+                    </form>
+                </div>
 
-            <!-- Login Section -->
-            <div id="login-section" class="auth-section hidden">
-                <h2>Login to Your Account</h2>
-                <form id="login-form">
-                    <input type="text" id="login-username-email" placeholder="Username or Email" required>
-                    <input type="password" id="login-password" placeholder="Password" required>
-                    <p class="form-error" id="login-error"></p>
-                    <button type="submit" class="modal-btn primary-modal-btn">Login</button>
-                    <button type="button" class="modal-btn back-to-welcome" data-target="welcome-section">Back</button>
-                </form>
+                <!-- Login Section -->
+                <div id="login-section" class="auth-section hidden">
+                    <h2>Login to Your Account</h2>
+                    <form id="login-form">
+                        <input type="text" id="login-username-email" placeholder="Username or Email" required>
+                        <input type="password" id="login-password" placeholder="Password" required>
+                        <p class="form-error" id="login-error"></p>
+                        <button type="submit" class="modal-btn primary-modal-btn">Login</button>
+                        <button type="button" class="modal-btn back-to-welcome gray-btn" data-target="welcome-section">Back</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -122,7 +129,7 @@
             </div>
         </section>
 
-        <!-- User Status Bar - will now show guest ID -->
+        <!-- User Status Bar -->
         <div id="user-status"></div>
     </main>
 

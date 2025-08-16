@@ -1,18 +1,18 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
-import { getFirestore, collection, getDocs, query, where, doc, runTransaction, setDoc, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js"; // Import Firestore functions
+import { getFirestore, collection, getDocs, query, where, doc, runTransaction, setDoc, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
 // Your web app's Firebase configuration
 // IMPORTANT: REPLACE WITH YOUR ACTUAL VALUES from Firebase Console -> Project Settings -> Your Apps (Web App)
 const firebaseConfig = {
-  apiKey: "AIzaSyBa7_mkNVlIHQgWYytgXy0sLqkfuS-rVK4", // Make sure this is your actual key
+  apiKey: "AIzaSyBa7_mkNVlIHQgWYytgXy0sLqkfuS-rVK4",
   authDomain: "rajukart-ae5ca.firebaseapp.com",
-  projectId: "rajukart-ae5ca", // This should already be correct
+  projectId: "rajukart-ae5ca",
   storageBucket: "rajukart-ae5ca.firebasestorage.app",
   messagingSenderId: "570218176052",
   appId: "1:570218176052:web:ea421005352249c160b461",
-  measurementId: "G-PGTT4FEZEJ" // If you have Analytics enabled
+  measurementId: "G-PGTT4FEZEJ"
 };
 
 // Initialize Firebase
@@ -101,7 +101,7 @@ async function getNextGuestId(uid) {
     }
 }
 
-// Handle anonymous sign-in
+// Handler for anonymous sign-in
 async function handleGuestSignIn() {
     try {
         const userCredential = await signInAnonymously(auth);
@@ -121,8 +121,8 @@ async function handleGuestSignIn() {
             localStorage.setItem('localGuestId', guestId);
         }
 
-        authModal.style.display = 'none';
-        profileText.textContent = guestId;
+        authModal.style.display = 'none'; // Hide modal
+        profileText.textContent = guestId; // Update profile text
         console.log(`Signed in as guest: ${guestId} (UID: ${user.uid})`);
         userStatusDiv.textContent = `Welcome, ${guestId}! (Guest)`; // Update status bar
         fetchAndDisplayProducts(); // Attempt to load products after sign-in
@@ -334,10 +334,6 @@ onAuthStateChanged(auth, async (user) => {
 
 // --- Initial Modal Display & Navigation ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Check if user is already logged in (Firebase handles session persistence)
-    // The onAuthStateChanged listener above will handle showing/hiding the modal based on auth state.
-    // So, no explicit modal.style.display here initially.
-    
     // Set active class for initial view
     showAuthSection(welcomeSection);
 
@@ -366,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Offer Advertisement Carousel Logic (from previous main.js) ---
+    // --- Offer Advertisement Carousel Logic ---
     const carouselTrack = document.getElementById('carousel-track');
     const carouselIndicatorsContainer = document.getElementById('carousel-indicators');
 
@@ -510,8 +506,8 @@ categoriesNav.addEventListener('click', (event) => {
         
         const selectedCategory = target.getAttribute('data-category');
         console.log(`Category selected: ${selectedCategory}`);
-        // This is where you would re-fetch and display products for the selected category
-        fetchAndDisplayProducts(selectedCategory); // Now called by user auth state
+        // This will still fail due to rules, but ready when fixed:
+        fetchAndDisplayProducts(selectedCategory);
     }
 });
 
