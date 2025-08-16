@@ -1,28 +1,32 @@
+/* --- Root Variables (Color Palette) --- */
 :root {
     --primary-color: #40E0D0; /* Turquoise */
     --primary-dark-color: #32B8A8; /* Slightly darker turquoise for hover */
     --dark-color: #333;
-    --light-color: #f4f4f4;
+    --light-color: #f4f4f4; /* General light background */
     --text-color: #333;
     --white-color: #fff;
     --border-color: #ddd;
     --shadow-color: rgba(0,0,0,0.1);
-    --error-color: #d9534f;
-    --educational-bg: #fffbe6; /* Light yellow from your ref */
-    --educational-border: #ffe58f;
-    --educational-text: #614d00;
+    --error-color: #d9534f; /* Red for error messages */
+
+    /* Educational Project Notice Colors (from your ref) */
+    --educational-bg: #fffbe6; /* Light yellow */
+    --educational-border: #ffe58f; /* Darker yellow border */
+    --educational-text: #614d00; /* Dark yellow text */
 }
 
+/* --- Base Body & Typography --- */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: var(--light-color); /* Matches bg-gray-50 from ref */
+    background-color: var(--light-color); /* Matches bg-gray-50 from your ref */
     color: var(--text-color);
     line-height: 1.6;
 }
 
-/* Header Styles */
+/* --- Header Styles --- */
 header {
     background-color: var(--primary-color);
     color: var(--white-color);
@@ -138,7 +142,7 @@ header {
     display: block; /* Show dropdown on hover */
 }
 
-/* Categories Navigation */
+/* --- Categories Navigation --- */
 .categories-nav {
     display: flex;
     justify-content: center;
@@ -163,7 +167,7 @@ header {
     color: var(--dark-color);
 }
 
-/* Main Content Area */
+/* --- Main Content Area --- */
 main {
     padding: 20px;
     max-width: 1200px;
@@ -181,7 +185,7 @@ h2 {
     font-weight: 600;
 }
 
-/* Offer Carousel */
+/* --- Offer Carousel --- */
 .offer-carousel {
     position: relative;
     width: 100%;
@@ -228,7 +232,7 @@ h2 {
     border: 2px solid var(--dark-color);
 }
 
-/* Product Grid */
+/* --- Product Grid --- */
 .product-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -290,7 +294,7 @@ h2 {
     background-color: var(--primary-dark-color);
 }
 
-/* User Status */
+/* --- User Status Bar --- */
 #user-status {
     margin-top: 40px;
     padding: 15px;
@@ -302,7 +306,7 @@ h2 {
     color: var(--text-color);
 }
 
-/* Footer */
+/* --- Footer --- */
 footer {
     text-align: center;
     padding: 20px;
@@ -315,72 +319,7 @@ footer {
     font-size: 0.9em;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-    .header-top {
-        flex-direction: column;
-        text-align: center;
-        padding: 15px;
-    }
-    .header-top h1 {
-        margin-bottom: 15px;
-    }
-    .search-bar {
-        width: 90%;
-        margin: 15px 0;
-    }
-    .header-icons {
-        margin-top: 15px;
-        justify-content: center;
-        gap: 15px;
-    }
-    .categories-nav {
-        flex-direction: column;
-        gap: 10px;
-        padding: 10px 20px;
-    }
-    .categories-nav a {
-        width: 100%;
-        text-align: center;
-    }
-    main {
-        padding: 15px;
-        margin: 15px auto;
-    }
-    .product-grid {
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 15px;
-    }
-    .carousel-track {
-        height: 200px;
-    }
-}
-
-@media (max-width: 480px) {
-    .header-top {
-        padding: 10px;
-    }
-    .header-top h1 {
-        font-size: 1.8em;
-    }
-    .search-bar {
-        width: 95%;
-    }
-    .header-icons {
-        gap: 10px;
-    }
-    .icon-item .icon {
-        font-size: 1.5em;
-    }
-    .icon-item .icon-text {
-        font-size: 0.7em;
-    }
-    .carousel-track {
-        height: 150px;
-    }
-}
-
-/* Base Modal Styles */
+/* --- Modal Styles --- */
 .modal {
     position: fixed; /* Always stay in place */
     inset: 0; /* Top, right, bottom, left to 0 - covers entire viewport */
@@ -426,6 +365,7 @@ footer {
 .modal-header h2 {
     margin: 0; /* Override default h2 margin */
     text-align: left; /* Align title left */
+    color: var(--text-color); /* Ensure heading color matches text-gray-800 */
 }
 
 .modal-close-btn {
@@ -465,9 +405,10 @@ footer {
     margin-top: 5px;
 }
 
-
 /* Modal Buttons Styling */
-.space-y-4 > *:not(:last-child) { /* Equivalent to Tailwind's space-y-4 */
+/* This rule targets direct children of .space-y-4 and applies margin-bottom */
+/* It simulates Tailwind's space-y-4 class for vertical spacing */
+.space-y-4 > *:not(:last-child) {
     margin-bottom: 1rem; /* 16px */
 }
 
@@ -572,4 +513,76 @@ label.block { /* From your ref */
 
 .text-link-btn:hover {
     color: var(--primary-dark-color);
+}
+
+/* --- Responsive Design (Media Queries) --- */
+@media (max-width: 768px) {
+    .header-top {
+        flex-direction: column;
+        text-align: center;
+        padding: 15px;
+    }
+    .header-top h1 {
+        margin-bottom: 15px;
+    }
+    .search-bar {
+        width: 90%;
+        margin: 15px 0;
+    }
+    .header-icons {
+        margin-top: 15px;
+        justify-content: center;
+        gap: 15px;
+    }
+    .categories-nav {
+        flex-direction: column;
+        gap: 10px;
+        padding: 10px 20px;
+    }
+    .categories-nav a {
+        width: 100%;
+        text-align: center;
+    }
+    main {
+        padding: 15px;
+        margin: 15px auto;
+    }
+    .product-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 15px;
+    }
+    .carousel-track {
+        height: 200px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-top {
+        padding: 10px;
+    }
+    .header-top h1 {
+        font-size: 1.8em;
+    }
+    .search-bar {
+        width: 95%;
+    }
+    .header-icons {
+        gap: 10px;
+    }
+    .icon-item .icon {
+        font-size: 1.5em;
+    }
+    .icon-item .icon-text {
+        font-size: 0.7em;
+    }
+    .carousel-track {
+        height: 150px;
+    }
+    .modal-content {
+        padding: 20px;
+    }
+    .modal-btn {
+        font-size: 1em;
+        padding: 10px 20px;
+    }
 }
