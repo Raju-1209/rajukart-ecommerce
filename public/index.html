@@ -5,10 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RajuKart - Your E-commerce Destination</title>
     <link rel="stylesheet" href="style.css">
-    <!-- You might use an icon library like Font Awesome here in a real project -->
-    <!-- For now, we'll use simple text or CSS shapes for icons -->
 </head>
 <body>
+
+    <!-- Initial Welcome/Login Modal -->
+    <div id="auth-modal" class="modal">
+        <div class="modal-content">
+            <h2>Welcome to RajuKart!</h2>
+            <p>Please choose an option to continue:</p>
+            <div class="modal-buttons">
+                <button id="login-button" class="modal-btn">Login</button>
+                <button id="signup-button" class="modal-btn">Sign Up</button>
+                <button id="guest-button" class="modal-btn primary-modal-btn">Continue as Guest</button>
+            </div>
+            <p class="modal-info">As a guest, you can browse products. To wishlist or order, please login/signup.</p>
+        </div>
+    </div>
+
     <header>
         <div class="header-top">
             <h1>RajuKart</h1>
@@ -18,29 +31,25 @@
             </div>
             <div class="header-icons">
                 <div class="icon-item">
-                    <!-- Placeholder for Wishlist Icon -->
                     <span class="icon">&#x2764;</span> <!-- Heart symbol -->
                     <span class="icon-text">Wishlist</span>
                 </div>
                 <div class="icon-item">
-                    <!-- Placeholder for Cart Icon -->
                     <span class="icon">&#x1F6D2;</span> <!-- Shopping Cart symbol -->
                     <span class="icon-text">Cart</span>
                 </div>
                 <div class="icon-item">
-                    <!-- Placeholder for Track Order Icon -->
                     <span class="icon">&#x1F69B;</span> <!-- Delivery Truck symbol -->
                     <span class="icon-text">Track Order</span>
                 </div>
                 <div class="icon-item profile-dropdown-container">
-                    <!-- Placeholder for Profile Icon -->
                     <span class="icon">&#x1F464;</span> <!-- Person symbol -->
-                    <span class="icon-text">Profile</span>
+                    <span class="icon-text" id="profile-text">Profile</span>
                     <div class="profile-dropdown-content">
-                        <a href="#">My Account</a>
-                        <a href="#">My Orders</a>
-                        <a href="#">Settings</a>
-                        <a href="#">Sign Out</a>
+                        <a href="#" id="my-account-link">My Account</a>
+                        <a href="#" id="my-orders-link">My Orders</a>
+                        <a href="#" id="settings-link">Settings</a>
+                        <a href="#" id="signout-link">Sign Out</a>
                     </div>
                 </div>
             </div>
@@ -72,7 +81,6 @@
             <h2>Featured Products</h2>
             <div class="product-grid" id="featured-product-list">
                 <!-- Featured products will be loaded here by JavaScript -->
-                <!-- For now, we'll just replicate product cards, later we'll filter -->
             </div>
         </section>
 
@@ -84,9 +92,8 @@
             </div>
         </section>
 
-        <div id="user-status">
-            <!-- User status (logged in/out) will be displayed here -->
-        </div>
+        <!-- User Status Bar - will now show guest ID -->
+        <div id="user-status"></div>
     </main>
 
     <footer>
