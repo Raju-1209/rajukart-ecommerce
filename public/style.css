@@ -473,3 +473,63 @@ footer {
         padding: 10px 20px;
     }
 }
+
+/* Modal Section Management */
+.auth-section {
+    display: none; /* Hide all sections by default */
+}
+
+.auth-section.active {
+    display: block; /* Show active section */
+}
+
+/* Form Styling */
+.modal-content form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 25px;
+}
+
+.modal-content input[type="text"],
+.modal-content input[type="email"],
+.modal-content input[type="password"] {
+    padding: 12px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    font-size: 1em;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.modal-content input[type="text"]:focus,
+.modal-content input[type="email"]:focus,
+.modal-content input[type="password"]:focus {
+    border-color: var(--primary-color);
+}
+
+.form-error {
+    color: #d9534f; /* A red color for errors */
+    font-size: 0.9em;
+    text-align: left;
+    margin-top: -10px;
+    margin-bottom: 5px;
+    display: block; /* Ensure it takes up space */
+}
+
+/* Back Button in Modal */
+.back-to-welcome {
+    background-color: #6c757d; /* Gray color */
+}
+
+.back-to-welcome:hover {
+    background-color: #5a6268;
+}
+
+/* Adjust modal buttons for forms */
+.modal-content form .modal-btn {
+    width: auto; /* Let content determine width */
+    max-width: 250px; /* Max width for submit buttons */
+    margin: 0 auto; /* Center buttons */
+    flex-grow: 0;
+}

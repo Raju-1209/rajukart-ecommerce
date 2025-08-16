@@ -1,7 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
-import { getFirestore, collection, getDocs, query, where, doc, runTransaction, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js"; // Import Firestore functions
+import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+import { getFirestore, collection, getDocs, query, where, doc, runTransaction, setDoc, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js"; // Import Firestore functions
 
 // Your web app's Firebase configuration
 // IMPORTANT: REPLACE WITH YOUR ACTUAL VALUES from Firebase Console -> Project Settings -> Your Apps (Web App)
@@ -20,40 +20,70 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app); // Get the Authentication service instance
 const db = getFirestore(app); // Get the Firestore service instance
 
-// UI Elements
+// --- UI Elements ---
 const userStatusDiv = document.getElementById('user-status');
 const allProductListDiv = document.getElementById('all-product-list');
 const featuredProductListDiv = document.getElementById('featured-product-list');
 const categoriesNav = document.querySelector('.categories-nav');
 const profileText = document.getElementById('profile-text'); // For updating profile name
+
+// Modal Elements
 const authModal = document.getElementById('auth-modal');
-const loginButton = document.getElementById('login-button');
-const signupButton = document.getElementById('signup-button');
+const welcomeSection = document.getElementById('welcome-section');
+const signupSection = document.getElementById('signup-section');
+const loginSection = document.getElementById('login-section');
+
+// Welcome Section Buttons
+const loginButtonInitial = document.getElementById('login-button-initial');
+const signupButtonInitial = document.getElementById('signup-button-initial');
 const guestButton = document.getElementById('guest-button');
+
+// Sign Up Form Elements
+const signupForm = document.getElementById('signup-form');
+const signupFullnameInput = document.getElementById('signup-fullname');
+const signupEmailInput = document.getElementById('signup-email');
+const signupUsernameInput = document.getElementById('signup-username');
+const signupPasswordInput = document.getElementById('signup-password');
+const signupErrorDisplay = document.getElementById('signup-error');
+
+// Login Form Elements
+const loginForm = document.getElementById('login-form');
+const loginUsernameEmailInput = document.getElementById('login-username-email');
+const loginPasswordInput = document.getElementById('login-password');
+const loginErrorDisplay = document.getElementById('login-error');
+
+// Back Buttons
+const backButtons = document.querySelectorAll('.back-to-welcome');
+
+// --- Helper Functions for Modal Management ---
+function showAuthSection(sectionElement) {
+    welcomeSection.classList.remove('active');
+    signupSection.classList.remove('active');
+    loginSection.classList.remove('active');
+
+    sectionElement.classList.add('active');
+}
 
 // --- Authentication Flow ---
 
 // Function to generate a sequential Guest ID
 async function getNextGuestId(uid) {
-    const counterRef = doc(db, 'settings', 'guestCounter'); // Document to hold the counter
-    const userDocRef = doc(db, 'users', uid); // User's document in 'users' collection
+    const counterRef = doc(db, 'settings', 'guestCounter');
+    const userDocRef = doc(db, 'users', uid);
 
     try {
         let guestId = '';
         await runTransaction(db, async (transaction) => {
             const counterDoc = await transaction.get(counterRef);
             if (!counterDoc.exists) {
-                // Initialize counter if it doesn't exist
                 transaction.set(counterRef, { count: 0 });
             }
             
             const currentCount = counterDoc.data()?.count || 0;
             const newCount = currentCount + 1;
             
-            // Format as Guest000001, Guest000002, etc.
             guestId = `Guest${String(newCount).padStart(6, '0')}`;
             
-            // Update counter and create user document
             transaction.update(counterRef, { count: newCount });
             transaction.set(userDocRef, {
                 uid: uid,
@@ -61,45 +91,41 @@ async function getNextGuestId(uid) {
                 isGuest: true,
                 createdAt: serverTimestamp(),
                 lastLoginAt: serverTimestamp()
-            });
+            }, { merge: true }); // Use merge to avoid overwriting if doc exists
         });
         console.log(`Generated and saved new guest ID: ${guestId}`);
         return guestId;
     } catch (e) {
         console.error("Error generating guest ID via transaction:", e);
-        // Fallback if transaction fails (e.g., rules prevent it)
-        // This will create a non-sequential but unique ID for this session if Firestore fails
-        return `Guest-${uid.substring(0, 6)}`;
+        return `Guest-${uid.substring(0, 6)}`; // Fallback ID
     }
 }
 
-// Handler for anonymous sign-in
+// Handle anonymous sign-in
 async function handleGuestSignIn() {
     try {
         const userCredential = await signInAnonymously(auth);
         const user = userCredential.user;
-        let guestId = localStorage.getItem('localGuestId'); // Check local storage first
+        let guestId = localStorage.getItem('localGuestId');
 
         if (!guestId) {
-            // Fetch/generate guestId from Firestore only if not in local storage
             const userDocRef = doc(db, 'users', user.uid);
-            const userDoc = await getDocs(query(collection(db, 'users'), where('uid', '==', user.uid)));
+            const userDocSnap = await getDoc(userDocRef); // Get specific user doc
 
-            if (userDoc.empty) {
-                // New anonymous user, generate and save guest ID
+            if (!userDocSnap.exists() || !userDocSnap.data().guestId) {
                 guestId = await getNextGuestId(user.uid);
             } else {
-                // Existing anonymous user (re-visiting), retrieve their guest ID
-                guestId = userDoc.docs[0].data().guestId;
-                // Update last login
+                guestId = userDocSnap.data().guestId;
                 await setDoc(userDocRef, { lastLoginAt: serverTimestamp() }, { merge: true });
             }
-            localStorage.setItem('localGuestId', guestId); // Store in local storage for future visits
+            localStorage.setItem('localGuestId', guestId);
         }
 
-        authModal.style.display = 'none'; // Hide modal
-        profileText.textContent = guestId; // Update profile text
+        authModal.style.display = 'none';
+        profileText.textContent = guestId;
         console.log(`Signed in as guest: ${guestId} (UID: ${user.uid})`);
+        userStatusDiv.textContent = `Welcome, ${guestId}! (Guest)`; // Update status bar
+        fetchAndDisplayProducts(); // Attempt to load products after sign-in
 
     } catch (error) {
         console.error("Anonymous sign-in failed:", error);
@@ -107,78 +133,306 @@ async function handleGuestSignIn() {
     }
 }
 
-// Listen to auth state changes
+// --- Validation Functions ---
+function validateEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.com$/; // Must contain @ and end with .com
+    return emailRegex.test(email);
+}
+
+function validatePassword(password) {
+    // 8+ chars, 1 uppercase, 1 lowercase, 1 numeric, 1 special character
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/.test(password); // Common special chars
+
+    return password.length >= minLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar;
+}
+
+function validateUsername(username) {
+    // String + numeric: must contain at least one letter and at least one number
+    // Could be more complex, but this satisfies "string + numeric"
+    const hasLetter = /[a-zA-Z]/.test(username);
+    const hasNumber = /[0-9]/.test(username);
+    return hasLetter && hasNumber && username.length > 0;
+}
+
+
+// --- Sign Up Logic ---
+signupForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    signupErrorDisplay.textContent = ''; // Clear previous errors
+
+    const fullname = signupFullnameInput.value.trim();
+    const email = signupEmailInput.value.trim();
+    const username = signupUsernameInput.value.trim();
+    const password = signupPasswordInput.value;
+
+    // Client-side validation
+    if (!fullname || !email || !username || !password) {
+        signupErrorDisplay.textContent = 'All fields are required.';
+        return;
+    }
+    if (!validateEmail(email)) {
+        signupErrorDisplay.textContent = 'Invalid email format. Must contain "@" and end with ".com"';
+        return;
+    }
+    if (!validateUsername(username)) {
+        signupErrorDisplay.textContent = 'Username must contain both letters and numbers.';
+        return;
+    }
+    if (!validatePassword(password)) {
+        signupErrorDisplay.textContent = 'Password must be 8+ characters, with at least one uppercase, one lowercase, one number, and one special character.';
+        return;
+    }
+
+    // Check if username already exists in Firestore (NOT SECURE CLIENT-SIDE - Cloud Function needed for robust check)
+    // NOTE: This check is for illustrative purposes. For true security, this must be done via a Cloud Function
+    // with proper Firestore Security Rules that prevent a user from claiming another's username.
+    try {
+        const usernameQuery = query(collection(db, 'users'), where('username', '==', username));
+        const usernameSnapshot = await getDocs(usernameQuery);
+        if (!usernameSnapshot.empty) {
+            signupErrorDisplay.textContent = 'This username is already taken.';
+            return;
+        }
+    } catch (error) {
+        console.error("Error checking username existence:", error);
+        signupErrorDisplay.textContent = "Could not check username. Please try again.";
+        return;
+    }
+    // --- End of Client-Side Username Check ---
+
+
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Store additional user details in Firestore
+        // This requires Firestore rules to allow the user to write to their own document (e.g., match /users/{userId} { allow create: request.auth.uid == userId;})
+        await setDoc(doc(db, 'users', user.uid), {
+            uid: user.uid,
+            fullName: fullname,
+            username: username,
+            email: email,
+            createdAt: serverTimestamp(),
+            lastLoginAt: serverTimestamp(),
+            isGuest: false
+        });
+
+        // Update Firebase Auth profile display name (optional, but good for some Firebase services)
+        await updateProfile(user, { displayName: fullname });
+
+        console.log("User signed up and profile saved:", user.uid);
+        authModal.style.display = 'none'; // Hide modal
+        // onAuthStateChanged will handle UI update
+
+    } catch (error) {
+        console.error("Sign Up failed:", error);
+        let errorMessage = 'Sign Up failed. Please try again.';
+        if (error.code === 'auth/email-already-in-use') {
+            errorMessage = 'This email is already in use. Please login or use a different email.';
+        } else if (error.code === 'auth/weak-password') {
+             errorMessage = 'Password is too weak. ' + error.message;
+        }
+        signupErrorDisplay.textContent = errorMessage;
+    }
+});
+
+
+// --- Login Logic ---
+loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    loginErrorDisplay.textContent = ''; // Clear previous errors
+
+    const usernameOrEmail = loginUsernameEmailInput.value.trim();
+    const password = loginPasswordInput.value;
+
+    if (!usernameOrEmail || !password) {
+        loginErrorDisplay.textContent = 'Both fields are required.';
+        return;
+    }
+
+    try {
+        let emailToLogin = usernameOrEmail;
+
+        // If it looks like a username, try to find the corresponding email
+        // NOTE: This client-side lookup is not fully secure for login by username.
+        // A Cloud Function is recommended for production username-based login.
+        if (!validateEmail(usernameOrEmail)) {
+            const usernameQuery = query(collection(db, 'users'), where('username', '==', usernameOrEmail));
+            const usernameSnapshot = await getDocs(usernameQuery);
+            
+            if (usernameSnapshot.empty) {
+                loginErrorDisplay.textContent = 'Invalid username or password.';
+                return;
+            }
+            emailToLogin = usernameSnapshot.docs[0].data().email;
+        }
+        // --- End of Client-Side Username Lookup ---
+
+
+        await signInWithEmailAndPassword(auth, emailToLogin, password);
+        authModal.style.display = 'none'; // Hide modal
+        // onAuthStateChanged will handle UI update
+        console.log("User logged in successfully.");
+
+    } catch (error) {
+        console.error("Login failed:", error);
+        let errorMessage = 'Login failed. Invalid username/email or password.';
+        if (error.code === 'auth/invalid-email' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+             errorMessage = 'Invalid username/email or password.';
+        } else if (error.code === 'auth/too-many-requests') {
+             errorMessage = 'Too many failed login attempts. Please try again later.';
+        }
+        loginErrorDisplay.textContent = errorMessage;
+    }
+});
+
+
+// --- Auth State Change Listener ---
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // User is signed in (could be anonymous or permanent)
-        let displayId = user.uid; // Default display
+        let displayId = 'User';
         if (user.isAnonymous) {
-            // If anonymous, try to get the Guest ID from local storage or Firestore
+            // Retrieve Guest ID from local storage or Firestore
             let localGuestId = localStorage.getItem('localGuestId');
             if (localGuestId) {
                 displayId = localGuestId;
             } else {
-                // This scenario means anonymous user is logged in, but we lost localGuestId.
-                // Re-fetch from Firestore using UID, or regenerate if somehow not found (shouldn't happen)
-                const userDoc = await getDocs(query(collection(db, 'users'), where('uid', '==', user.uid)));
-                if (!userDoc.empty) {
-                    displayId = userDoc.docs[0].data().guestId;
+                const userDocRef = doc(db, 'users', user.uid);
+                const userDocSnap = await getDoc(userDocRef);
+                if (userDocSnap.exists() && userDocSnap.data().guestId) {
+                    displayId = userDocSnap.data().guestId;
                     localStorage.setItem('localGuestId', displayId);
                 } else {
-                    // Fallback if somehow guest ID not found in Firestore either (should be rare)
-                    displayId = `Guest-${user.uid.substring(0, 6)}`;
-                    localStorage.setItem('localGuestId', displayId);
+                    displayId = await getNextGuestId(user.uid); // Generate if not found
                 }
             }
             userStatusDiv.textContent = `Welcome, ${displayId}! (Guest)`;
         } else {
             // Permanent user
-            userStatusDiv.textContent = `Welcome, ${user.displayName || user.email}!`;
+            displayId = user.displayName || user.email; // Prefer displayName
+            userStatusDiv.textContent = `Welcome, ${displayId}!`;
+            localStorage.removeItem('localGuestId'); // Clear guest ID for permanent users
         }
         profileText.textContent = displayId; // Update header profile text
         authModal.style.display = 'none'; // Hide modal if logged in
+        fetchAndDisplayProducts(); // Attempt to load products after user is determined
 
     } else {
         // User is signed out (or not yet signed in)
         userStatusDiv.textContent = `You are signed out.`;
         profileText.textContent = 'Profile'; // Reset header profile text
         localStorage.removeItem('localGuestId'); // Clear guest ID on sign out
+        showAuthSection(welcomeSection); // Show welcome section
         authModal.style.display = 'flex'; // Show modal
     }
 });
 
-// Event Listeners for Modal Buttons
-guestButton.addEventListener('click', handleGuestSignIn);
-loginButton.addEventListener('click', () => {
-    alert('Login functionality coming soon!'); // Placeholder for now
-    // TODO: Implement actual login form
-});
-signupButton.addEventListener('click', () => {
-    alert('Sign Up functionality coming soon!'); // Placeholder for now
-    // TODO: Implement actual signup form
-});
-// Sign Out link (inside profile dropdown)
-const signoutLink = document.getElementById('signout-link');
-if (signoutLink) {
-    signoutLink.addEventListener('click', async (e) => {
-        e.preventDefault();
-        try {
-            await auth.signOut();
-            console.log('User signed out.');
-            // onAuthStateChanged will handle UI update
-        } catch (error) {
-            console.error('Error signing out:', error);
-        }
+
+// --- Initial Modal Display & Navigation ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Check if user is already logged in (Firebase handles session persistence)
+    // The onAuthStateChanged listener above will handle showing/hiding the modal based on auth state.
+    // So, no explicit modal.style.display here initially.
+    
+    // Set active class for initial view
+    showAuthSection(welcomeSection);
+
+    // Event Listeners for Modal Buttons
+    loginButtonInitial.addEventListener('click', () => showAuthSection(loginSection));
+    signupButtonInitial.addEventListener('click', () => showAuthSection(signupSection));
+    guestButton.addEventListener('click', handleGuestSignIn);
+
+    // Event Listeners for Back Buttons
+    backButtons.forEach(button => {
+        button.addEventListener('click', () => showAuthSection(welcomeSection));
     });
-}
+
+    // Sign Out link (inside profile dropdown)
+    const signoutLink = document.getElementById('signout-link');
+    if (signoutLink) {
+        signoutLink.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                await signOut(auth); // Use Firebase Auth signOut function
+                console.log('User signed out.');
+                // onAuthStateChanged will handle UI update and modal display
+            } catch (error) {
+                console.error('Error signing out:', error);
+            }
+        });
+    }
+
+    // --- Offer Advertisement Carousel Logic (from previous main.js) ---
+    const carouselTrack = document.getElementById('carousel-track');
+    const carouselIndicatorsContainer = document.getElementById('carousel-indicators');
+
+    const offerImages = [
+        'https://via.placeholder.com/1200x300?text=Grand+Summer+Sale',
+        'https://via.placeholder.com/1200x300?text=New+Arrivals+Alert',
+        'https://via.placeholder.com/1200x300?text=Limited-Time+Offer',
+        'https://via.placeholder.com/1200x300?text=Free+Shipping+on+All+Orders'
+    ];
+
+    let currentIndex = 0;
+    let carouselInterval;
+
+    function createCarouselElements() {
+        carouselTrack.innerHTML = '';
+        carouselIndicatorsContainer.innerHTML = '';
+        offerImages.forEach((src, index) => {
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = `Offer ${index + 1}`;
+            carouselTrack.appendChild(img);
+
+            const indicator = document.createElement('div');
+            indicator.className = 'indicator';
+            indicator.addEventListener('click', () => goToSlide(index));
+            carouselIndicatorsContainer.appendChild(indicator);
+        });
+        updateCarousel();
+    }
+
+    function updateCarousel() {
+        carouselTrack.style.transform = `translateX(-${currentIndex * 100}%)`;
+        carouselIndicatorsContainer.querySelectorAll('.indicator').forEach((indicator, index) => {
+            if (index === currentIndex) {
+                indicator.classList.add('active');
+            } else {
+                indicator.classList.remove('active');
+            }
+        });
+    }
+
+    function nextSlide() {
+        currentIndex = (currentIndex + 1) % offerImages.length;
+        updateCarousel();
+    }
+
+    function goToSlide(index) {
+        currentIndex = index;
+        updateCarousel();
+        clearInterval(carouselInterval);
+        carouselInterval = setInterval(nextSlide, 3000);
+    }
+
+    createCarouselElements();
+    carouselInterval = setInterval(nextSlide, 3000);
+
+    const allProductsLink = categoriesNav.querySelector('[data-category="all"]');
+    if (allProductsLink) {
+        allProductsLink.classList.add('active-category');
+    }
+});
 
 
 // --- Product Display Logic (Will work when Firestore rules are fixed) ---
-// (No changes to this section from previous main.js)
-// ... (Keep existing fetchAndDisplayProducts, createProductCard functions) ...
-// ... (Keep carousel logic) ...
 
-// Helper function to create a product card HTML (from previous main.js)
+// Helper function to create a product card HTML
 function createProductCard(product) {
     const card = document.createElement('div');
     card.className = 'product-card';
@@ -193,11 +447,11 @@ function createProductCard(product) {
     return card;
 }
 
-// Function to fetch and display products (from previous main.js)
+// Function to fetch and display products
 async function fetchAndDisplayProducts(category = 'all') {
-    if (!allProductListDiv || !featuredProductListDiv) return;
+    if (!allProductListDiv || !featuredProductListDiv) return; // Exit if containers not found
 
-    allProductListDiv.innerHTML = 'Loading products...';
+    allProductListDiv.innerHTML = 'Loading products...'; // Clear and show loading
     featuredProductListDiv.innerHTML = 'Loading featured products...';
 
     try {
@@ -205,15 +459,15 @@ async function fetchAndDisplayProducts(category = 'all') {
         let q;
 
         if (category === 'all') {
-            q = productsCol;
+            q = productsCol; // No filter, get all
         } else {
-            q = query(productsCol, where('category', '==', category));
+            q = query(productsCol, where('category', '==', category)); // Filter by category
         }
 
         const productSnapshot = await getDocs(q);
         const products = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        allProductListDiv.innerHTML = '';
+        allProductListDiv.innerHTML = ''; // Clear loading message
         featuredProductListDiv.innerHTML = '';
 
         if (products.length === 0) {
@@ -222,10 +476,12 @@ async function fetchAndDisplayProducts(category = 'all') {
             return;
         }
 
+        // Display all products
         products.forEach(product => {
             allProductListDiv.appendChild(createProductCard(product));
         });
 
+        // Display 5 featured products (for now, just take the first 5 or fewer if not enough)
         products.slice(0, 5).forEach(product => {
             featuredProductListDiv.appendChild(createProductCard(product));
         });
@@ -236,92 +492,29 @@ async function fetchAndDisplayProducts(category = 'all') {
         console.error("Error fetching products:", error);
         allProductListDiv.innerHTML = '<p>Error loading products. Please check console.</p>';
         featuredProductListDiv.innerHTML = '<p>Error loading featured products.</p>';
+        // This is where you'll see "permission denied" until rules are fixed.
     }
 }
 
-// Event listener for category navigation (from previous main.js)
+// Event listener for category navigation
 categoriesNav.addEventListener('click', (event) => {
-    event.preventDefault();
+    event.preventDefault(); // Prevent default link behavior
     const target = event.target;
     if (target.tagName === 'A' && target.hasAttribute('data-category')) {
+        // Remove active class from previous category
         categoriesNav.querySelectorAll('a').forEach(link => {
             link.classList.remove('active-category');
         });
+        // Add active class to clicked category
         target.classList.add('active-category');
         
         const selectedCategory = target.getAttribute('data-category');
         console.log(`Category selected: ${selectedCategory}`);
-        // This will still fail due to rules, but ready when fixed:
-        // fetchAndDisplayProducts(selectedCategory);
+        // This is where you would re-fetch and display products for the selected category
+        fetchAndDisplayProducts(selectedCategory); // Now called by user auth state
     }
 });
 
-// --- Offer Advertisement Carousel Logic (from previous main.js) ---
-const carouselTrack = document.getElementById('carousel-track');
-const carouselIndicatorsContainer = document.getElementById('carousel-indicators');
-
-const offerImages = [
-    'https://via.placeholder.com/1200x300?text=Grand+Summer+Sale',
-    'https://via.placeholder.com/1200x300?text=New+Arrivals+Alert',
-    'https://via.placeholder.com/1200x300?text=Limited-Time+Offer',
-    'https://via.placeholder.com/1200x300?text=Free+Shipping+on+All+Orders'
-];
-
-let currentIndex = 0;
-let carouselInterval;
-
-function createCarouselElements() {
-    carouselTrack.innerHTML = '';
-    carouselIndicatorsContainer.innerHTML = '';
-    offerImages.forEach((src, index) => {
-        const img = document.createElement('img');
-        img.src = src;
-        img.alt = `Offer ${index + 1}`;
-        carouselTrack.appendChild(img);
-
-        const indicator = document.createElement('div');
-        indicator.className = 'indicator';
-        indicator.addEventListener('click', () => goToSlide(index));
-        carouselIndicatorsContainer.appendChild(indicator);
-    });
-    updateCarousel();
-}
-
-function updateCarousel() {
-    carouselTrack.style.transform = `translateX(-${currentIndex * 100}%)`;
-    carouselIndicatorsContainer.querySelectorAll('.indicator').forEach((indicator, index) => {
-        if (index === currentIndex) {
-            indicator.classList.add('active');
-        } else {
-            indicator.classList.remove('active');
-        }
-    });
-}
-
-function nextSlide() {
-    currentIndex = (currentIndex + 1) % offerImages.length;
-    updateCarousel();
-}
-
-function goToSlide(index) {
-    currentIndex = index;
-    updateCarousel();
-    clearInterval(carouselInterval);
-    carouselInterval = setInterval(nextSlide, 3000);
-}
-
-// Start carousel on page load
-document.addEventListener('DOMContentLoaded', () => {
-    createCarouselElements();
-    carouselInterval = setInterval(nextSlide, 3000);
-
-    const allProductsLink = categoriesNav.querySelector('[data-category="all"]');
-    if (allProductsLink) {
-        allProductsLink.classList.add('active-category');
-    }
-    
-    // fetchAndDisplayProducts will be called by onAuthStateChanged if user is signed in
-});
 
 // --- Feature Restriction Logic ---
 // This will pop up a modal if a guest user tries to add to cart/wishlist
@@ -332,11 +525,12 @@ document.addEventListener('click', (event) => {
         if (user && user.isAnonymous) {
             event.preventDefault(); // Stop default button action
             alert('Please Login or Sign Up to add items to your cart or wishlist!');
-            // You could show the authModal here instead of an alert
-            // authModal.style.display = 'flex';
+            showAuthSection(welcomeSection); // Show welcome section in modal
+            authModal.style.display = 'flex'; // Show modal
         } else if (!user) {
             event.preventDefault(); // Stop default button action
             // If user is null, meaning not even anonymous, show the auth modal
+            showAuthSection(welcomeSection); // Show welcome section in modal
             authModal.style.display = 'flex';
         }
     }
