@@ -1,82 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>RajuKart</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RajuKart - Your E-commerce Destination</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- You might use an icon library like Font Awesome here in a real project -->
+    <!-- For now, we'll use simple text or CSS shapes for icons -->
 </head>
 <body>
-  <!-- Header -->
-  <header class="header">
-    <h1>RajuKart</h1>
-    <div id="userInfo" class="user-status">Checking auth…</div>
-    <button id="logoutBtn" class="hidden">Logout</button>
-  </header>
+    <header>
+        <div class="header-top">
+            <h1>RajuKart</h1>
+            <div class="search-bar">
+                <input type="text" placeholder="Search for products...">
+                <button>Search</button>
+            </div>
+            <div class="header-icons">
+                <div class="icon-item">
+                    <!-- Placeholder for Wishlist Icon -->
+                    <span class="icon">&#x2764;</span> <!-- Heart symbol -->
+                    <span class="icon-text">Wishlist</span>
+                </div>
+                <div class="icon-item">
+                    <!-- Placeholder for Cart Icon -->
+                    <span class="icon">&#x1F6D2;</span> <!-- Shopping Cart symbol -->
+                    <span class="icon-text">Cart</span>
+                </div>
+                <div class="icon-item">
+                    <!-- Placeholder for Track Order Icon -->
+                    <span class="icon">&#x1F69B;</span> <!-- Delivery Truck symbol -->
+                    <span class="icon-text">Track Order</span>
+                </div>
+                <div class="icon-item profile-dropdown-container">
+                    <!-- Placeholder for Profile Icon -->
+                    <span class="icon">&#x1F464;</span> <!-- Person symbol -->
+                    <span class="icon-text">Profile</span>
+                    <div class="profile-dropdown-content">
+                        <a href="#">My Account</a>
+                        <a href="#">My Orders</a>
+                        <a href="#">Settings</a>
+                        <a href="#">Sign Out</a>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-  <!-- Category Buttons -->
-  <div class="categories">
-    <button class="category-btn active" data-cat="all">All</button>
-    <button class="category-btn" data-cat="electronics">Electronics</button>
-    <button class="category-btn" data-cat="clothing">Clothing</button>
-    <button class="category-btn" data-cat="books">Books</button>
-    <button class="category-btn" data-cat="health">Health</button>
-    <button class="category-btn" data-cat="home">Home</button>
-    <button class="category-btn" data-cat="beauty">Beauty</button>
-    <button class="category-btn" data-cat="toys">Toys</button>
-  </div>
+        <nav class="categories-nav">
+            <a href="#" data-category="all">All Products</a>
+            <a href="#" data-category="Electronics">Electronics</a>
+            <a href="#" data-category="Apparel">Apparel</a>
+            <a href="#" data-category="Books & Stationery">Books & Stationery</a>
+            <a href="#" data-category="Health & Wellness">Health & Wellness</a>
+            <a href="#" data-category="Homeware">Homeware</a>
+            <a href="#" data-category="Beauty & Personal Care">Beauty & Personal Care</a>
+            <a href="#" data-category="Toys & Games">Toys & Games</a>
+        </nav>
+    </header>
 
-  <!-- Search -->
-  <div class="search-bar">
-    <input id="searchInput" type="text" placeholder="Search products..."/>
-    <button>Search</button>
-  </div>
+    <main>
+        <!-- Offer Advertisements Carousel -->
+        <section class="offer-carousel">
+            <div class="carousel-track" id="carousel-track">
+                <!-- Images will be dynamically loaded here by JavaScript -->
+            </div>
+            <div class="carousel-indicators" id="carousel-indicators"></div>
+        </section>
 
-  <!-- Product Grid -->
-  <div id="productCount" class="product-count"></div>
-  <div id="productsGrid" class="products-grid"></div>
-  <button id="loadMoreBtn" class="load-more">Load More</button>
+        <!-- Featured Products Section -->
+        <section class="featured-products-section">
+            <h2>Featured Products</h2>
+            <div class="product-grid" id="featured-product-list">
+                <!-- Featured products will be loaded here by JavaScript -->
+                <!-- For now, we'll just replicate product cards, later we'll filter -->
+            </div>
+        </section>
 
-  <!-- Wishlist Modal -->
-  <div id="wishlistModal" class="modal hidden">
-    <h2>Wishlist (<span id="wishlistCount">0</span>)</h2>
-    <div id="wishlistItems"></div>
-    <button data-close-wishlist>Close</button>
-  </div>
+        <!-- All Products Section -->
+        <section class="all-products-section">
+            <h2>Browse All Products</h2>
+            <div class="product-grid" id="all-product-list">
+                <!-- All products will be loaded here by JavaScript -->
+            </div>
+        </section>
 
-  <!-- Cart Modal -->
-  <div id="cartModal" class="modal hidden">
-    <h2>Cart (<span id="cartCount">0</span>)</h2>
-    <div id="cartItems"></div>
-    <div>Total: ₹<span id="cartTotal">0</span></div>
-    <button id="btnCheckout">Checkout</button>
-    <button data-close-cart>Close</button>
-  </div>
+        <div id="user-status">
+            <!-- User status (logged in/out) will be displayed here -->
+        </div>
+    </main>
 
-  <!-- Order Placement Page -->
-  <div id="orderPlacementPage" class="modal hidden">
-    <h2>Order Summary</h2>
-    <div id="orderSummaryItems"></div>
-    <div>Total: ₹<span id="orderTotal">0</span></div>
-    <button id="placeOrderBtn">Place Order</button>
-    <button id="closeOrderPlacement">Close</button>
-  </div>
+    <footer>
+        <p>&copy; 2024 RajuKart. All rights reserved.</p>
+    </footer>
 
-  <!-- Tracking Modal -->
-  <div id="orderTrackingModal" class="modal hidden">
-    <h2>Track Order</h2>
-    <div id="orderTrackingContent"></div>
-    <button data-close-track>Close</button>
-  </div>
-
-  <!-- Analytics Modal -->
-  <div id="analyticsModal" class="modal hidden">
-    <h2>Analytics</h2>
-    <div id="analyticsContent">Analytics placeholder</div>
-    <button data-close-analytics>Close</button>
-  </div>
-
-  <!-- Scripts -->
-  <script type="module" src="/scripts/main.js"></script>
+    <script type="module" src="/scripts/main.js"></script>
 </body>
 </html>
