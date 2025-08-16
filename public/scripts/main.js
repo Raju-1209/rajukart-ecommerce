@@ -27,16 +27,23 @@ const featuredProductListDiv = document.getElementById('featured-product-list');
 const categoriesNav = document.querySelector('.categories-nav');
 const profileText = document.getElementById('profile-text'); // For updating profile name
 
-// Modal Elements
-const authModal = document.getElementById('auth-modal');
-const welcomeSection = document.getElementById('welcome-section');
-const signupSection = document.getElementById('signup-section');
-const loginSection = document.getElementById('login-section');
+// Modals
+const authModal = document.getElementById('authModal'); // The initial welcome modal
+const loginModal = document.getElementById('loginModal'); // The login form modal
+const signupModal = document.getElementById('signupModal'); // The signup form modal
 
-// Welcome Section Buttons
-const loginButtonInitial = document.getElementById('login-button-initial');
-const signupButtonInitial = document.getElementById('signup-button-initial');
-const guestButton = document.getElementById('guest-button');
+// Welcome Modal Buttons
+const guestButtonWelcome = document.getElementById('guest-button-welcome');
+const loginButtonWelcome = document.getElementById('login-button-welcome');
+const signupButtonWelcome = document.getElementById('signup-button-welcome');
+
+// Login Form Elements
+const loginForm = document.getElementById('login-form');
+const loginUsernameEmailInput = document.getElementById('login-username-email');
+const loginPasswordInput = document.getElementById('login-password');
+const loginErrorDisplay = document.getElementById('login-error');
+const closeLoginModalBtn = document.getElementById('close-login-modal');
+const showSignupFromLoginBtn = document.getElementById('show-signup-from-login');
 
 // Sign Up Form Elements
 const signupForm = document.getElementById('signup-form');
@@ -45,23 +52,29 @@ const signupEmailInput = document.getElementById('signup-email');
 const signupUsernameInput = document.getElementById('signup-username');
 const signupPasswordInput = document.getElementById('signup-password');
 const signupErrorDisplay = document.getElementById('signup-error');
-
-// Login Form Elements
-const loginForm = document.getElementById('login-form');
-const loginUsernameEmailInput = document.getElementById('login-username-email');
-const loginPasswordInput = document.getElementById('login-password');
-const loginErrorDisplay = document.getElementById('login-error');
-
-// Back Buttons
-const backButtons = document.querySelectorAll('.back-to-welcome');
+const closeSignupModalBtn = document.getElementById('close-signup-modal');
+const showLoginFromSignupBtn = document.getElementById('show-login-from-signup');
 
 // --- Helper Functions for Modal Management ---
-function showAuthSection(sectionElement) {
-    welcomeSection.classList.remove('active');
-    signupSection.classList.remove('active');
-    loginSection.classList.remove('active');
+function hideAllModals() {
+    authModal.classList.add('hidden');
+    loginModal.classList.add('hidden');
+    signupModal.classList.add('hidden');
+}
 
-    sectionElement.classList.add('active');
+function showAuthModal() {
+    hideAllModals();
+    authModal.classList.remove('hidden');
+}
+
+function showLoginModal() {
+    hideAllModals();
+    loginModal.classList.remove('hidden');
+}
+
+function showSignupModal() {
+    hideAllModals();
+    signupModal.classList.remove('hidden');
 }
 
 // --- Authentication Flow ---
@@ -91,17 +104,17 @@ async function getNextGuestId(uid) {
                 isGuest: true,
                 createdAt: serverTimestamp(),
                 lastLoginAt: serverTimestamp()
-            }, { merge: true }); // Use merge to avoid overwriting if doc exists
+            }, { merge: true });
         });
         console.log(`Generated and saved new guest ID: ${guestId}`);
         return guestId;
     } catch (e) {
         console.error("Error generating guest ID via transaction:", e);
-        return `Guest-${uid.substring(0, 6)}`; // Fallback ID
+        return `Guest-${uid.substring(0, 6)}`;
     }
 }
 
-// Handler for anonymous sign-in
+// Handle anonymous sign-in
 async function handleGuestSignIn() {
     try {
         const userCredential = await signInAnonymously(auth);
@@ -110,7 +123,7 @@ async function handleGuestSignIn() {
 
         if (!guestId) {
             const userDocRef = doc(db, 'users', user.uid);
-            const userDocSnap = await getDoc(userDocRef); // Get specific user doc
+            const userDocSnap = await getDoc(userDocRef);
 
             if (!userDocSnap.exists() || !userDocSnap.data().guestId) {
                 guestId = await getNextGuestId(user.uid);
@@ -121,11 +134,11 @@ async function handleGuestSignIn() {
             localStorage.setItem('localGuestId', guestId);
         }
 
-        authModal.style.display = 'none'; // Hide modal
-        profileText.textContent = guestId; // Update profile text
+        hideAllModals(); // Hide all modals on successful guest sign-in
+        profileText.textContent = guestId;
         console.log(`Signed in as guest: ${guestId} (UID: ${user.uid})`);
-        userStatusDiv.textContent = `Welcome, ${guestId}! (Guest)`; // Update status bar
-        fetchAndDisplayProducts(); // Attempt to load products after sign-in
+        userStatusDiv.textContent = `Welcome, ${guestId}! (Guest)`;
+        fetchAndDisplayProducts();
 
     } catch (error) {
         console.error("Anonymous sign-in failed:", error);
@@ -135,24 +148,21 @@ async function handleGuestSignIn() {
 
 // --- Validation Functions ---
 function validateEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.com$/; // Must contain @ and end with .com
+    const emailRegex = /^[^\s@]+@[^\s@]+\.com$/;
     return emailRegex.test(email);
 }
 
 function validatePassword(password) {
-    // 8+ chars, 1 uppercase, 1 lowercase, 1 numeric, 1 special character
     const minLength = 8;
     const hasUpperCase = /[A-Z]/.test(password);
     const hasLowerCase = /[a-z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
-    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/.test(password); // Common special chars
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/.test(password);
 
     return password.length >= minLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar;
 }
 
 function validateUsername(username) {
-    // String + numeric: must contain at least one letter and at least one number
-    // Could be more complex, but this satisfies "string + numeric"
     const hasLetter = /[a-zA-Z]/.test(username);
     const hasNumber = /[0-9]/.test(username);
     return hasLetter && hasNumber && username.length > 0;
@@ -187,9 +197,7 @@ signupForm.addEventListener('submit', async (e) => {
         return;
     }
 
-    // Check if username already exists in Firestore (NOT SECURE CLIENT-SIDE - Cloud Function needed for robust check)
-    // NOTE: This check is for illustrative purposes. For true security, this must be done via a Cloud Function
-    // with proper Firestore Security Rules that prevent a user from claiming another's username.
+    // Check if username already exists in Firestore (Client-side, for illustration)
     try {
         const usernameQuery = query(collection(db, 'users'), where('username', '==', username));
         const usernameSnapshot = await getDocs(usernameQuery);
@@ -202,15 +210,11 @@ signupForm.addEventListener('submit', async (e) => {
         signupErrorDisplay.textContent = "Could not check username. Please try again.";
         return;
     }
-    // --- End of Client-Side Username Check ---
-
 
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Store additional user details in Firestore
-        // This requires Firestore rules to allow the user to write to their own document (e.g., match /users/{userId} { allow create: request.auth.uid == userId;})
         await setDoc(doc(db, 'users', user.uid), {
             uid: user.uid,
             fullName: fullname,
@@ -221,11 +225,10 @@ signupForm.addEventListener('submit', async (e) => {
             isGuest: false
         });
 
-        // Update Firebase Auth profile display name (optional, but good for some Firebase services)
         await updateProfile(user, { displayName: fullname });
 
         console.log("User signed up and profile saved:", user.uid);
-        authModal.style.display = 'none'; // Hide modal
+        hideAllModals(); // Hide all modals
         // onAuthStateChanged will handle UI update
 
     } catch (error) {
@@ -257,9 +260,6 @@ loginForm.addEventListener('submit', async (e) => {
     try {
         let emailToLogin = usernameOrEmail;
 
-        // If it looks like a username, try to find the corresponding email
-        // NOTE: This client-side lookup is not fully secure for login by username.
-        // A Cloud Function is recommended for production username-based login.
         if (!validateEmail(usernameOrEmail)) {
             const usernameQuery = query(collection(db, 'users'), where('username', '==', usernameOrEmail));
             const usernameSnapshot = await getDocs(usernameQuery);
@@ -270,12 +270,9 @@ loginForm.addEventListener('submit', async (e) => {
             }
             emailToLogin = usernameSnapshot.docs[0].data().email;
         }
-        // --- End of Client-Side Username Lookup ---
-
 
         await signInWithEmailAndPassword(auth, emailToLogin, password);
-        authModal.style.display = 'none'; // Hide modal
-        // onAuthStateChanged will handle UI update
+        hideAllModals(); // Hide all modals
         console.log("User logged in successfully.");
 
     } catch (error) {
@@ -296,7 +293,6 @@ onAuthStateChanged(auth, async (user) => {
     if (user) {
         let displayId = 'User';
         if (user.isAnonymous) {
-            // Retrieve Guest ID from local storage or Firestore
             let localGuestId = localStorage.getItem('localGuestId');
             if (localGuestId) {
                 displayId = localGuestId;
@@ -307,45 +303,46 @@ onAuthStateChanged(auth, async (user) => {
                     displayId = userDocSnap.data().guestId;
                     localStorage.setItem('localGuestId', displayId);
                 } else {
-                    displayId = await getNextGuestId(user.uid); // Generate if not found
+                    displayId = await getNextGuestId(user.uid);
                 }
             }
             userStatusDiv.textContent = `Welcome, ${displayId}! (Guest)`;
         } else {
-            // Permanent user
-            displayId = user.displayName || user.email; // Prefer displayName
+            displayId = user.displayName || user.email;
             userStatusDiv.textContent = `Welcome, ${displayId}!`;
-            localStorage.removeItem('localGuestId'); // Clear guest ID for permanent users
+            localStorage.removeItem('localGuestId');
         }
-        profileText.textContent = displayId; // Update header profile text
-        authModal.style.display = 'none'; // Hide modal if logged in
-        fetchAndDisplayProducts(); // Attempt to load products after user is determined
+        profileText.textContent = displayId;
+        hideAllModals(); // Always hide modals if a user is authenticated
+        fetchAndDisplayProducts();
 
     } else {
-        // User is signed out (or not yet signed in)
         userStatusDiv.textContent = `You are signed out.`;
-        profileText.textContent = 'Profile'; // Reset header profile text
-        localStorage.removeItem('localGuestId'); // Clear guest ID on sign out
-        showAuthSection(welcomeSection); // Show welcome section
-        authModal.style.display = 'flex'; // Show modal
+        profileText.textContent = 'Profile';
+        localStorage.removeItem('localGuestId');
+        showAuthModal(); // Show the initial welcome modal if no user is authenticated
     }
 });
 
 
-// --- Initial Modal Display & Navigation ---
+// --- Initial Modal Display & Event Listeners ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Set active class for initial view
-    showAuthSection(welcomeSection);
+    // Only show authModal if no user is authenticated on page load
+    // The onAuthStateChanged listener above handles this.
+    // We just need to ensure the correct elements are hooked up.
 
-    // Event Listeners for Modal Buttons
-    loginButtonInitial.addEventListener('click', () => showAuthSection(loginSection));
-    signupButtonInitial.addEventListener('click', () => showAuthSection(signupSection));
-    guestButton.addEventListener('click', handleGuestSignIn);
+    // Welcome Modal Buttons
+    guestButtonWelcome.addEventListener('click', handleGuestSignIn);
+    loginButtonWelcome.addEventListener('click', showLoginModal);
+    signupButtonWelcome.addEventListener('click', showSignupModal);
 
-    // Event Listeners for Back Buttons
-    backButtons.forEach(button => {
-        button.addEventListener('click', () => showAuthSection(welcomeSection));
-    });
+    // Login Modal Buttons
+    closeLoginModalBtn.addEventListener('click', showAuthModal);
+    showSignupFromLoginBtn.addEventListener('click', showSignupModal);
+
+    // Signup Modal Buttons
+    closeSignupModalBtn.addEventListener('click', showAuthModal);
+    showLoginFromSignupBtn.addEventListener('click', showLoginModal);
 
     // Sign Out link (inside profile dropdown)
     const signoutLink = document.getElementById('signout-link');
@@ -353,9 +350,8 @@ document.addEventListener('DOMContentLoaded', () => {
         signoutLink.addEventListener('click', async (e) => {
             e.preventDefault();
             try {
-                await signOut(auth); // Use Firebase Auth signOut function
+                await signOut(auth);
                 console.log('User signed out.');
-                // onAuthStateChanged will handle UI update and modal display
             } catch (error) {
                 console.error('Error signing out:', error);
             }
@@ -432,7 +428,6 @@ document.addEventListener('DOMContentLoaded', () => {
 function createProductCard(product) {
     const card = document.createElement('div');
     card.className = 'product-card';
-    // Add data attributes to buttons for future use, e.g., guest user checks
     card.innerHTML = `
         <img src="${product.imageUrl}" alt="${product.name}">
         <h3>${product.name}</h3>
@@ -445,9 +440,9 @@ function createProductCard(product) {
 
 // Function to fetch and display products
 async function fetchAndDisplayProducts(category = 'all') {
-    if (!allProductListDiv || !featuredProductListDiv) return; // Exit if containers not found
+    if (!allProductListDiv || !featuredProductListDiv) return;
 
-    allProductListDiv.innerHTML = 'Loading products...'; // Clear and show loading
+    allProductListDiv.innerHTML = 'Loading products...';
     featuredProductListDiv.innerHTML = 'Loading featured products...';
 
     try {
@@ -455,15 +450,15 @@ async function fetchAndDisplayProducts(category = 'all') {
         let q;
 
         if (category === 'all') {
-            q = productsCol; // No filter, get all
+            q = productsCol;
         } else {
-            q = query(productsCol, where('category', '==', category)); // Filter by category
+            q = query(productsCol, where('category', '==', category));
         }
 
         const productSnapshot = await getDocs(q);
         const products = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        allProductListDiv.innerHTML = ''; // Clear loading message
+        allProductListDiv.innerHTML = '';
         featuredProductListDiv.innerHTML = '';
 
         if (products.length === 0) {
@@ -472,12 +467,10 @@ async function fetchAndDisplayProducts(category = 'all') {
             return;
         }
 
-        // Display all products
         products.forEach(product => {
             allProductListDiv.appendChild(createProductCard(product));
         });
 
-        // Display 5 featured products (for now, just take the first 5 or fewer if not enough)
         products.slice(0, 5).forEach(product => {
             featuredProductListDiv.appendChild(createProductCard(product));
         });
@@ -488,46 +481,35 @@ async function fetchAndDisplayProducts(category = 'all') {
         console.error("Error fetching products:", error);
         allProductListDiv.innerHTML = '<p>Error loading products. Please check console.</p>';
         featuredProductListDiv.innerHTML = '<p>Error loading featured products.</p>';
-        // This is where you'll see "permission denied" until rules are fixed.
     }
 }
 
 // Event listener for category navigation
 categoriesNav.addEventListener('click', (event) => {
-    event.preventDefault(); // Prevent default link behavior
+    event.preventDefault();
     const target = event.target;
     if (target.tagName === 'A' && target.hasAttribute('data-category')) {
-        // Remove active class from previous category
         categoriesNav.querySelectorAll('a').forEach(link => {
             link.classList.remove('active-category');
         });
-        // Add active class to clicked category
         target.classList.add('active-category');
         
         const selectedCategory = target.getAttribute('data-category');
         console.log(`Category selected: ${selectedCategory}`);
-        // This will still fail due to rules, but ready when fixed:
         fetchAndDisplayProducts(selectedCategory);
     }
 });
 
 
 // --- Feature Restriction Logic ---
-// This will pop up a modal if a guest user tries to add to cart/wishlist
 document.addEventListener('click', (event) => {
     const target = event.target;
     if (target.tagName === 'BUTTON' && (target.classList.contains('add-to-cart-btn') || target.classList.contains('wishlist-btn'))) {
         const user = auth.currentUser;
-        if (user && user.isAnonymous) {
-            event.preventDefault(); // Stop default button action
+        if (!user || user.isAnonymous) { // If no user or anonymous user
+            event.preventDefault();
             alert('Please Login or Sign Up to add items to your cart or wishlist!');
-            showAuthSection(welcomeSection); // Show welcome section in modal
-            authModal.style.display = 'flex'; // Show modal
-        } else if (!user) {
-            event.preventDefault(); // Stop default button action
-            // If user is null, meaning not even anonymous, show the auth modal
-            showAuthSection(welcomeSection); // Show welcome section in modal
-            authModal.style.display = 'flex';
+            showAuthModal(); // Show the initial choice modal
         }
     }
 });

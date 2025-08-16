@@ -7,13 +7,17 @@
     --white-color: #fff;
     --border-color: #ddd;
     --shadow-color: rgba(0,0,0,0.1);
+    --error-color: #d9534f;
+    --educational-bg: #fffbe6; /* Light yellow from your ref */
+    --educational-border: #ffe58f;
+    --educational-text: #614d00;
 }
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: var(--light-color);
+    background-color: var(--light-color); /* Matches bg-gray-50 from ref */
     color: var(--text-color);
     line-height: 1.6;
 }
@@ -376,175 +380,18 @@ footer {
     }
 }
 
-/* Modal Styles */
+/* Base Modal Styles */
 .modal {
+    position: fixed; /* Always stay in place */
+    inset: 0; /* Top, right, bottom, left to 0 - covers entire viewport */
+    background-color: rgba(0,0,0,0.6); /* Black overlay with opacity */
+    z-index: 1000; /* High z-index to sit on top */
     display: none; /* Hidden by default */
-    position: fixed; /* Stay in place */
-    z-index: 1000; /* Sit on top */
-    left: 0;
-    top: 0;
-    width: 100%; /* Full width */
-    height: 100%; /* Full height */
-    overflow: auto; /* Enable scroll if needed */
-    background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
-    justify-content: center; /* Center horizontally */
-    align-items: center; /* Center vertically */
+    overflow: auto; /* Enable scroll if content is taller than viewport */
 }
 
-.modal-content {
-    background-color: var(--white-color);
-    margin: auto; /* For browsers that don't support flex centering */
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 5px 15px var(--shadow-color);
-    width: 80%; /* Could be responsive */
-    max-width: 500px;
-    text-align: center;
-    position: relative;
-    box-sizing: border-box; /* Include padding in width */
-}
-
-.modal-content h2 {
-    color: var(--primary-color);
-    margin-top: 0;
-    font-size: 2em;
-}
-
-.modal-content p {
-    font-size: 1.1em;
-    color: var(--text-color);
-    margin-bottom: 25px;
-}
-
-.modal-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    flex-wrap: wrap; /* Allows buttons to wrap on smaller screens */
-}
-
-.modal-btn {
-    background-color: var(--dark-color);
-    color: var(--white-color);
-    border: none;
-    padding: 12px 25px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1.1em;
-    font-weight: bold;
-    transition: background-color 0.3s ease;
-    flex-grow: 1; /* Allows buttons to grow */
-    max-width: 150px; /* Max width for individual buttons */
-}
-
-.modal-btn:hover {
-    background-color: #555;
-}
-
-.primary-modal-btn {
-    background-color: var(--primary-color);
-}
-
-.primary-modal-btn:hover {
-    background-color: var(--primary-dark-color);
-}
-
-.modal-info {
-    font-size: 0.9em;
-    color: #666;
-    margin-top: 20px;
-}
-
-/* Ensure header icons don't wrap too aggressively on small screens */
-@media (max-width: 480px) {
-    .header-icons {
-        flex-wrap: wrap;
-        justify-content: center;
-        width: 100%;
-    }
-    .icon-item {
-        flex: 1 1 auto; /* Allow items to grow/shrink, but don't break too early */
-    }
-    .modal-content {
-        padding: 20px;
-    }
-    .modal-btn {
-        font-size: 1em;
-        padding: 10px 20px;
-    }
-}
-
-/* Modal Section Management */
-.auth-section {
-    display: none; /* Hide all sections by default */
-}
-
-.auth-section.active {
-    display: block; /* Show active section */
-}
-
-/* Form Styling */
-.modal-content form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin-top: 25px;
-}
-
-.modal-content input[type="text"],
-.modal-content input[type="email"],
-.modal-content input[type="password"] {
-    padding: 12px 15px;
-    border: 1px solid var(--border-color);
-    border-radius: 5px;
-    font-size: 1em;
-    outline: none;
-    transition: border-color 0.3s ease;
-}
-
-.modal-content input[type="text"]:focus,
-.modal-content input[type="email"]:focus,
-.modal-content input[type="password"]:focus {
-    border-color: var(--primary-color);
-}
-
-.form-error {
-    color: #d9534f; /* A red color for errors */
-    font-size: 0.9em;
-    text-align: left;
-    margin-top: -10px;
-    margin-bottom: 5px;
-    display: block; /* Ensure it takes up space */
-}
-
-/* Back Button in Modal */
-.back-to-welcome {
-    background-color: #6c757d; /* Gray color */
-}
-
-.back-to-welcome:hover {
-    background-color: #5a6268;
-}
-
-/* Adjust modal buttons for forms */
-.modal-content form .modal-btn {
-    width: auto; /* Let content determine width */
-    max-width: 250px; /* Max width for submit buttons */
-    margin: 0 auto; /* Center buttons */
-    flex-grow: 0;
-}
-
-/* Modal Styles */
-.modal {
-    display: none; /* Hidden by default */
-    position: fixed; /* Stay in place relative to viewport */
-    z-index: 1000; /* Sit on top */
-    left: 0;
-    top: 0;
-    width: 100%; /* Full width */
-    height: 100%; /* Full height */
-    overflow: auto; /* Enable scroll if content is too tall */
-    background-color: rgba(0,0,0,0.6); /* Black w/ opacity for dimming effect */
+.modal.hidden {
+    display: none;
 }
 
 .modal-outer-wrapper {
@@ -568,70 +415,97 @@ footer {
     box-sizing: border-box;
 }
 
-.modal-content h2 {
-    color: var(--primary-color);
-    margin-top: 0;
-    font-size: 2em;
-    margin-bottom: 10px; /* Reduced margin */
+/* Modal Header (for Login/Signup) */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
 }
 
-.modal-content p {
-    font-size: 1.1em;
-    color: var(--text-color);
-    margin-bottom: 25px; /* Adjust as needed */
+.modal-header h2 {
+    margin: 0; /* Override default h2 margin */
+    text-align: left; /* Align title left */
 }
 
-/* Modal Section Management */
-.auth-section {
-    display: none; /* Hide all sections by default */
+.modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    color: #888;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.2s ease;
 }
 
-.auth-section.active {
-    display: block; /* Show active section */
+.modal-close-btn:hover {
+    color: #555;
 }
+
+/* Educational Notice */
+.educational-notice {
+    background-color: var(--educational-bg);
+    border: 1px solid var(--educational-border);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+.educational-notice p {
+    margin: 0;
+    color: var(--educational-text);
+}
+.educational-notice p:first-child {
+    font-weight: bold;
+    font-size: 0.9em;
+}
+.educational-notice p:last-child {
+    font-size: 0.75em;
+    margin-top: 5px;
+}
+
 
 /* Modal Buttons Styling */
-.modal-buttons {
-    display: flex;
-    flex-direction: column; /* Stack buttons vertically */
-    gap: 15px; /* Space between buttons */
-    margin-top: 25px; /* Space above buttons */
+.space-y-4 > *:not(:last-child) { /* Equivalent to Tailwind's space-y-4 */
+    margin-bottom: 1rem; /* 16px */
 }
 
 .modal-btn {
     width: 100%; /* Full width for buttons */
-    background-color: var(--dark-color); /* Default background */
-    color: var(--white-color);
     border: none;
     padding: 12px 25px;
-    border-radius: 5px;
+    border-radius: 8px; /* Slightly more rounded like your ref */
     cursor: pointer;
     font-size: 1.1em;
     font-weight: bold;
-    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, opacity 0.3s ease;
 }
 
 .modal-btn:hover {
     opacity: 0.9;
 }
 
-.primary-modal-btn { /* Login Button (Turquoise) */
-    background-color: var(--primary-color);
-}
-
-.primary-modal-btn:hover {
-    background-color: var(--primary-dark-color);
-}
-
-.gray-btn { /* Guest Button (Gray) */
-    background-color: #6c757d;
+/* Button variants based on your reference */
+.gray-btn { /* Continue as Guest */
+    background-color: #6c757d; /* Equivalent to bg-gray-500/600 */
+    color: var(--white-color);
 }
 
 .gray-btn:hover {
     background-color: #5a6268;
 }
 
-.bordered-btn { /* Sign Up Button (Bordered) */
+.primary-modal-btn { /* Login Button (Turquoise) */
+    background-color: var(--primary-color); /* Equivalent to bg-turquoise-600/700 */
+    color: var(--white-color);
+}
+
+.primary-modal-btn:hover {
+    background-color: var(--primary-dark-color);
+}
+
+.bordered-btn { /* Sign Up Button (Bordered Turquoise) */
     background-color: transparent;
     border: 1px solid var(--primary-color);
     color: var(--primary-color);
@@ -643,47 +517,59 @@ footer {
 }
 
 /* Form Styling */
-.modal-content form {
+form { /* Removed .modal-content prefix for general form styling */
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    margin-top: 25px;
+    gap: 15px; /* Space between form fields */
+    margin-top: 25px; /* Space above the form */
 }
 
-.modal-content input[type="text"],
-.modal-content input[type="email"],
-.modal-content input[type="password"] {
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+    width: 100%; /* Full width for inputs */
+    border: 1px solid #ccc; /* Equivalent to border-gray-300 */
+    border-radius: 8px; /* More rounded inputs */
     padding: 12px 15px;
-    border: 1px solid var(--border-color);
-    border-radius: 5px;
     font-size: 1em;
     outline: none;
-    transition: border-color 0.3s ease;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.modal-content input[type="text"]:focus,
-.modal-content input[type="email"]:focus,
-.modal-content input[type="password"]:focus {
-    border-color: var(--primary-color);
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus {
+    border-color: var(--primary-color); /* Focus border turquoise */
+    box-shadow: 0 0 0 2px rgba(64, 224, 208, 0.3); /* Subtle glow */
+}
+
+label.block { /* From your ref */
+    display: block;
+    text-align: left;
+    color: #4a5568; /* Equivalent to text-gray-700 */
+    margin-bottom: 8px; /* Equivalent to mb-2 */
 }
 
 .form-error {
-    color: #d9534f; /* A red color for errors */
+    color: var(--error-color); /* A red color for errors */
     font-size: 0.9em;
     text-align: left;
     margin-top: -10px;
     margin-bottom: 5px;
-    display: block; /* Ensure it takes up space */
+    display: block;
 }
 
-/* Back Button in Modal Form */
-.modal-content form .modal-btn.gray-btn {
-    width: auto;
-    max-width: 150px;
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 10px; /* Space between submit and back button */
+/* Text Link Button (for "Don't have an account?" links) */
+.text-link-btn {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    font-size: 1em;
+    text-decoration: underline;
+    transition: color 0.2s ease;
 }
 
-/* Existing styles below (copy from previous style.css update) */
-/* ... (Keep existing header, search bar, icon, category nav, main, carousel, product grid, footer styles) ... */
+.text-link-btn:hover {
+    color: var(--primary-dark-color);
+}

@@ -6,59 +6,115 @@
     <title>RajuKart - Your E-commerce Destination</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="bg-gray-50"> <!-- Added body class from your ref -->
 
-    <!-- Initial Welcome/Login Modal -->
-    <div id="auth-modal" class="modal">
-        <div class="modal-outer-wrapper"> <!-- This wrapper handles the full-screen centering -->
+    <!-- Initial Welcome/Choice Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-outer-wrapper">
             <div class="modal-content">
-                <div id="welcome-section" class="auth-section">
-                    <h2>Welcome to RajuKart!</h2>
-                    <p>Choose how you'd like to continue</p>
-                    
-                    <div class="modal-buttons">
-                        <button id="guest-button" class="modal-btn gray-btn">
-                            Continue as Guest
-                        </button>
-                        <button id="login-button-initial" class="modal-btn primary-modal-btn">
-                            Login
-                        </button>
-                        <button id="signup-button-initial" class="modal-btn bordered-btn">
-                            Sign Up
-                        </button>
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Welcome to RajuKart</h2>
+                    <p class="text-gray-600 mb-3">Choose how you'd like to continue</p>
+                    <div class="educational-notice">
+                        <p>📚 Educational Project Notice</p>
+                        <p>This is for project purpose - Don't put your personal information here!</p>
                     </div>
-                    <p class="modal-info">As a guest, you can browse products. To wishlist or order, please login/signup.</p>
                 </div>
-
-                <!-- Sign Up Section -->
-                <div id="signup-section" class="auth-section hidden">
-                    <h2>Create Your RajuKart Account</h2>
-                    <form id="signup-form">
-                        <input type="text" id="signup-fullname" placeholder="Full Name" required>
-                        <input type="email" id="signup-email" placeholder="Email (e.g., example@example.com)" required>
-                        <input type="text" id="signup-username" placeholder="Username (string + numeric)" required>
-                        <input type="password" id="signup-password" placeholder="Password (8+ chars, 1 Upper, 1 Lower, 1 Num, 1 Spec)" required>
-                        <p class="form-error" id="signup-error"></p>
-                        <button type="submit" class="modal-btn primary-modal-btn">Sign Up</button>
-                        <button type="button" class="modal-btn back-to-welcome gray-btn" data-target="welcome-section">Back</button>
-                    </form>
-                </div>
-
-                <!-- Login Section -->
-                <div id="login-section" class="auth-section hidden">
-                    <h2>Login to Your Account</h2>
-                    <form id="login-form">
-                        <input type="text" id="login-username-email" placeholder="Username or Email" required>
-                        <input type="password" id="login-password" placeholder="Password" required>
-                        <p class="form-error" id="login-error"></p>
-                        <button type="submit" class="modal-btn primary-modal-btn">Login</button>
-                        <button type="button" class="modal-btn back-to-welcome gray-btn" data-target="welcome-section">Back</button>
-                    </form>
+                
+                <div class="space-y-4">
+                    <button id="guest-button-welcome" class="modal-btn gray-btn">
+                        Continue as Guest
+                    </button>
+                    <button id="login-button-welcome" class="modal-btn primary-modal-btn">
+                        Login
+                    </button>
+                    <button id="signup-button-welcome" class="modal-btn bordered-btn">
+                        Sign Up
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Login Form Modal -->
+    <div id="loginModal" class="modal hidden">
+        <div class="modal-outer-wrapper">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="text-2xl font-bold text-gray-800">Login</h2>
+                    <button id="close-login-modal" class="modal-close-btn">✕</button>
+                </div>
+                
+                <form id="login-form">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-gray-700 mb-2">Username/Email</label>
+                            <input type="text" id="login-username-email" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2">Password</label>
+                            <input type="password" id="login-password" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        </div>
+                        <p class="form-error" id="login-error"></p>
+                        <button type="submit" class="modal-btn primary-modal-btn">
+                            Login
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="mt-4 text-center">
+                    <p class="text-gray-600">Don't have an account? 
+                        <button id="show-signup-from-login" class="text-link-btn">Sign up</button>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signup Form Modal -->
+    <div id="signupModal" class="modal hidden">
+        <div class="modal-outer-wrapper">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="text-2xl font-bold text-gray-800">Sign Up</h2>
+                    <button id="close-signup-modal" class="modal-close-btn">✕</button>
+                </div>
+                
+                <form id="signup-form">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-gray-700 mb-2">Full Name</label>
+                            <input type="text" id="signup-fullname" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2">Email</label>
+                            <input type="email" id="signup-email" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2">Username</label>
+                            <input type="text" id="signup-username" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2">Password</label>
+                            <input type="password" id="signup-password" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        </div>
+                        <p class="form-error" id="signup-error"></p>
+                        <button type="submit" class="modal-btn primary-modal-btn">
+                            Sign Up
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="mt-4 text-center">
+                    <p class="text-gray-600">Already have an account? 
+                        <button id="show-login-from-signup" class="text-link-btn">Login</button>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Site Content Starts Here -->
     <header>
         <div class="header-top">
             <h1>RajuKart</h1>
@@ -68,19 +124,19 @@
             </div>
             <div class="header-icons">
                 <div class="icon-item">
-                    <span class="icon">&#x2764;</span> <!-- Heart symbol -->
+                    <span class="icon">&#x2764;</span>
                     <span class="icon-text">Wishlist</span>
                 </div>
                 <div class="icon-item">
-                    <span class="icon">&#x1F6D2;</span> <!-- Shopping Cart symbol -->
+                    <span class="icon">&#x1F6D2;</span>
                     <span class="icon-text">Cart</span>
                 </div>
                 <div class="icon-item">
-                    <span class="icon">&#x1F69B;</span> <!-- Delivery Truck symbol -->
+                    <span class="icon">&#x1F69B;</span>
                     <span class="icon-text">Track Order</span>
                 </div>
                 <div class="icon-item profile-dropdown-container">
-                    <span class="icon">&#x1F464;</span> <!-- Person symbol -->
+                    <span class="icon">&#x1F464;</span>
                     <span class="icon-text" id="profile-text">Profile</span>
                     <div class="profile-dropdown-content">
                         <a href="#" id="my-account-link">My Account</a>
@@ -107,26 +163,20 @@
     <main>
         <!-- Offer Advertisements Carousel -->
         <section class="offer-carousel">
-            <div class="carousel-track" id="carousel-track">
-                <!-- Images will be dynamically loaded here by JavaScript -->
-            </div>
+            <div class="carousel-track" id="carousel-track"></div>
             <div class="carousel-indicators" id="carousel-indicators"></div>
         </section>
 
         <!-- Featured Products Section -->
         <section class="featured-products-section">
             <h2>Featured Products</h2>
-            <div class="product-grid" id="featured-product-list">
-                <!-- Featured products will be loaded here by JavaScript -->
-            </div>
+            <div class="product-grid" id="featured-product-list"></div>
         </section>
 
         <!-- All Products Section -->
         <section class="all-products-section">
             <h2>Browse All Products</h2>
-            <div class="product-grid" id="all-product-list">
-                <!-- All products will be loaded here by JavaScript -->
-            </div>
+            <div class="product-grid" id="all-product-list"></div>
         </section>
 
         <!-- User Status Bar -->
