@@ -106,10 +106,10 @@ async function getNextGuestId(uid) {
                 lastLoginAt: serverTimestamp()
             }, { merge: true });
         });
-        console.log(`Generated and saved new guest ID: ${guestId}`);
+        console.log(`[Guest Flow] Generated and saved new guest ID: ${guestId}`);
         return guestId;
     } catch (e) {
-        console.error("Error generating guest ID via transaction:", e);
+        console.error("[Guest Flow] Error generating guest ID via transaction:", e);
         return `Guest-${uid.substring(0, 6)}`;
     }
 }
@@ -117,31 +117,35 @@ async function getNextGuestId(uid) {
 // Handle anonymous sign-in
 async function handleGuestSignIn() {
     try {
+        console.log("[Guest Flow] Attempting anonymous sign-in...");
         const userCredential = await signInAnonymously(auth);
         const user = userCredential.user;
         let guestId = localStorage.getItem('localGuestId');
 
         if (!guestId) {
+            console.log("[Guest Flow] No localGuestId found, checking Firestore...");
             const userDocRef = doc(db, 'users', user.uid);
             const userDocSnap = await getDoc(userDocRef);
 
             if (!userDocSnap.exists() || !userDocSnap.data().guestId) {
+                console.log("[Guest Flow] No guestId in Firestore, generating new one.");
                 guestId = await getNextGuestId(user.uid);
             } else {
+                console.log("[Guest Flow] GuestId found in Firestore, retrieving.");
                 guestId = userDocSnap.data().guestId;
                 await setDoc(userDocRef, { lastLoginAt: serverTimestamp() }, { merge: true });
             }
             localStorage.setItem('localGuestId', guestId);
         }
 
-        hideAllModals(); // Hide all modals on successful guest sign-in
+        hideAllModals();
         profileText.textContent = guestId;
-        console.log(`Signed in as guest: ${guestId} (UID: ${user.uid})`);
+        console.log(`[Guest Flow] Signed in as guest: ${guestId} (UID: ${user.uid})`);
         userStatusDiv.textContent = `Welcome, ${guestId}! (Guest)`;
         fetchAndDisplayProducts();
 
     } catch (error) {
-        console.error("Anonymous sign-in failed:", error);
+        console.error("[Guest Flow] Anonymous sign-in failed:", error);
         userStatusDiv.textContent = `Error signing in as guest: ${error.message}`;
     }
 }
@@ -172,14 +176,13 @@ function validateUsername(username) {
 // --- Sign Up Logic ---
 signupForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    signupErrorDisplay.textContent = ''; // Clear previous errors
+    signupErrorDisplay.textContent = '';
 
     const fullname = signupFullnameInput.value.trim();
     const email = signupEmailInput.value.trim();
     const username = signupUsernameInput.value.trim();
     const password = signupPasswordInput.value;
 
-    // Client-side validation
     if (!fullname || !email || !username || !password) {
         signupErrorDisplay.textContent = 'All fields are required.';
         return;
@@ -197,8 +200,8 @@ signupForm.addEventListener('submit', async (e) => {
         return;
     }
 
-    // Check if username already exists in Firestore (Client-side, for illustration)
     try {
+        console.log("[Sign Up] Checking username existence...");
         const usernameQuery = query(collection(db, 'users'), where('username', '==', username));
         const usernameSnapshot = await getDocs(usernameQuery);
         if (!usernameSnapshot.empty) {
@@ -206,15 +209,17 @@ signupForm.addEventListener('submit', async (e) => {
             return;
         }
     } catch (error) {
-        console.error("Error checking username existence:", error);
+        console.error("[Sign Up] Error checking username existence:", error);
         signupErrorDisplay.textContent = "Could not check username. Please try again.";
         return;
     }
 
     try {
+        console.log("[Sign Up] Creating user with email and password...");
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
+        console.log("[Sign Up] Saving additional user details to Firestore...");
         await setDoc(doc(db, 'users', user.uid), {
             uid: user.uid,
             fullName: fullname,
@@ -225,14 +230,14 @@ signupForm.addEventListener('submit', async (e) => {
             isGuest: false
         });
 
+        console.log("[Sign Up] Updating Firebase Auth profile display name...");
         await updateProfile(user, { displayName: fullname });
 
-        console.log("User signed up and profile saved:", user.uid);
-        hideAllModals(); // Hide all modals
-        // onAuthStateChanged will handle UI update
+        console.log(`[Sign Up] User signed up and profile saved: ${user.uid}`);
+        hideAllModals();
 
     } catch (error) {
-        console.error("Sign Up failed:", error);
+        console.error("[Sign Up] Sign Up failed:", error);
         let errorMessage = 'Sign Up failed. Please try again.';
         if (error.code === 'auth/email-already-in-use') {
             errorMessage = 'This email is already in use. Please login or use a different email.';
@@ -247,7 +252,7 @@ signupForm.addEventListener('submit', async (e) => {
 // --- Login Logic ---
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    loginErrorDisplay.textContent = ''; // Clear previous errors
+    loginErrorDisplay.textContent = '';
 
     const usernameOrEmail = loginUsernameEmailInput.value.trim();
     const password = loginPasswordInput.value;
@@ -261,6 +266,7 @@ loginForm.addEventListener('submit', async (e) => {
         let emailToLogin = usernameOrEmail;
 
         if (!validateEmail(usernameOrEmail)) {
+            console.log("[Login] Attempting username-based login. Checking Firestore for email...");
             const usernameQuery = query(collection(db, 'users'), where('username', '==', usernameOrEmail));
             const usernameSnapshot = await getDocs(usernameQuery);
             
@@ -269,14 +275,16 @@ loginForm.addEventListener('submit', async (e) => {
                 return;
             }
             emailToLogin = usernameSnapshot.docs[0].data().email;
+            console.log(`[Login] Found email for username: ${emailToLogin}`);
         }
 
+        console.log(`[Login] Signing in with email: ${emailToLogin}`);
         await signInWithEmailAndPassword(auth, emailToLogin, password);
-        hideAllModals(); // Hide all modals
-        console.log("User logged in successfully.");
+        hideAllModals();
+        console.log("[Login] User logged in successfully.");
 
     } catch (error) {
-        console.error("Login failed:", error);
+        console.error("[Login] Login failed:", error);
         let errorMessage = 'Login failed. Invalid username/email or password.';
         if (error.code === 'auth/invalid-email' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
              errorMessage = 'Invalid username/email or password.';
@@ -290,33 +298,43 @@ loginForm.addEventListener('submit', async (e) => {
 
 // --- Auth State Change Listener ---
 onAuthStateChanged(auth, async (user) => {
+    console.log("onAuthStateChanged triggered. User:", user ? user.uid : "null (signed out)"); // IMPORTANT: Added debug log
+
     if (user) {
         let displayId = 'User';
         if (user.isAnonymous) {
+            console.log("[Auth State] User is anonymous.");
             let localGuestId = localStorage.getItem('localGuestId');
             if (localGuestId) {
                 displayId = localGuestId;
+                console.log(`[Auth State] Found localGuestId: ${displayId}`);
             } else {
+                console.log("[Auth State] No localGuestId, fetching from Firestore for anonymous user.");
                 const userDocRef = doc(db, 'users', user.uid);
                 const userDocSnap = await getDoc(userDocRef);
                 if (userDocSnap.exists() && userDocSnap.data().guestId) {
                     displayId = userDocSnap.data().guestId;
                     localStorage.setItem('localGuestId', displayId);
+                    console.log(`[Auth State] Retrieved guestId from Firestore: ${displayId}`);
                 } else {
+                    console.warn("[Auth State] Anonymous user has no guestId in Firestore. Generating new.");
                     displayId = await getNextGuestId(user.uid);
+                    localStorage.setItem('localGuestId', displayId);
                 }
             }
             userStatusDiv.textContent = `Welcome, ${displayId}! (Guest)`;
         } else {
+            console.log("[Auth State] User is permanent.");
             displayId = user.displayName || user.email;
             userStatusDiv.textContent = `Welcome, ${displayId}!`;
-            localStorage.removeItem('localGuestId');
+            localStorage.removeItem('localGuestId'); // Clear guest ID for permanent users
         }
         profileText.textContent = displayId;
         hideAllModals(); // Always hide modals if a user is authenticated
         fetchAndDisplayProducts();
 
     } else {
+        console.log("[Auth State] No user authenticated. Showing initial modal."); // IMPORTANT: Added debug log
         userStatusDiv.textContent = `You are signed out.`;
         profileText.textContent = 'Profile';
         localStorage.removeItem('localGuestId');
@@ -327,10 +345,6 @@ onAuthStateChanged(auth, async (user) => {
 
 // --- Initial Modal Display & Event Listeners ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Only show authModal if no user is authenticated on page load
-    // The onAuthStateChanged listener above handles this.
-    // We just need to ensure the correct elements are hooked up.
-
     // Welcome Modal Buttons
     guestButtonWelcome.addEventListener('click', handleGuestSignIn);
     loginButtonWelcome.addEventListener('click', showLoginModal);
@@ -350,10 +364,12 @@ document.addEventListener('DOMContentLoaded', () => {
         signoutLink.addEventListener('click', async (e) => {
             e.preventDefault();
             try {
+                console.log("[Sign Out] Attempting to sign user out...");
                 await signOut(auth);
-                console.log('User signed out.');
+                console.log('[Sign Out] User signed out successfully.');
+                // onAuthStateChanged will handle UI update and modal display
             } catch (error) {
-                console.error('Error signing out:', error);
+                console.error('[Sign Out] Error signing out:', error);
             }
         });
     }
@@ -422,9 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-// --- Product Display Logic (Will work when Firestore rules are fixed) ---
-
-// Helper function to create a product card HTML
+// --- Product Display Logic ---
 function createProductCard(product) {
     const card = document.createElement('div');
     card.className = 'product-card';
@@ -438,7 +452,6 @@ function createProductCard(product) {
     return card;
 }
 
-// Function to fetch and display products
 async function fetchAndDisplayProducts(category = 'all') {
     if (!allProductListDiv || !featuredProductListDiv) return;
 
@@ -506,10 +519,10 @@ document.addEventListener('click', (event) => {
     const target = event.target;
     if (target.tagName === 'BUTTON' && (target.classList.contains('add-to-cart-btn') || target.classList.contains('wishlist-btn'))) {
         const user = auth.currentUser;
-        if (!user || user.isAnonymous) { // If no user or anonymous user
+        if (!user || user.isAnonymous) {
             event.preventDefault();
             alert('Please Login or Sign Up to add items to your cart or wishlist!');
-            showAuthModal(); // Show the initial choice modal
+            showAuthModal();
         }
     }
 });
