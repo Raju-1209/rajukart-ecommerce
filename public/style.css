@@ -325,12 +325,13 @@ footer {
     inset: 0; /* Top, right, bottom, left to 0 - covers entire viewport */
     background-color: rgba(0,0,0,0.6); /* Black overlay with opacity */
     z-index: 1000; /* High z-index to sit on top */
-    display: none; /* Hidden by default */
+    display: flex; /* IMPORTANT: Set to flex by default, so modal-outer-wrapper is centered */
     overflow: auto; /* Enable scroll if content is taller than viewport */
+    /* Remove 'display: none;' from here. It will be handled by .modal.hidden */
 }
 
 .modal.hidden {
-    display: none;
+    display: none !important; /* Hide the modal when this class is present, override other displays */
 }
 
 .modal-outer-wrapper {
@@ -353,6 +354,8 @@ footer {
     position: relative;
     box-sizing: border-box;
 }
+/* ... (rest of your modal CSS from previous consolidated version, e.g., modal-header, educational-notice, modal-buttons, form styles, etc.) ... */
+
 
 /* Modal Header (for Login/Signup) */
 .modal-header {
