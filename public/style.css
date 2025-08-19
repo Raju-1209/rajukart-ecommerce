@@ -327,7 +327,6 @@ footer {
     z-index: 1000; /* High z-index to sit on top */
     display: flex; /* IMPORTANT: Set to flex by default, so modal-outer-wrapper is centered */
     overflow: auto; /* Enable scroll if content is taller than viewport */
-    /* Remove 'display: none;' from here. It will be handled by .modal.hidden */
 }
 
 .modal.hidden {
@@ -339,6 +338,7 @@ footer {
     align-items: center; /* Center content vertically */
     justify-content: center; /* Center content horizontally */
     min-height: 100vh; /* Ensure it takes full viewport height for centering */
+    width: 100%; /* IMPORTANT: Ensures this wrapper takes full width for horizontal centering */
     padding: 20px; /* Padding around the modal box */
     box-sizing: border-box; /* Include padding in dimensions */
 }
@@ -349,13 +349,11 @@ footer {
     border-radius: 10px;
     box-shadow: 0 5px 15px var(--shadow-color);
     width: 90%; /* Responsive width */
-    max-width: 500px; /* Max width for larger screens */
+    max-width: 400px; /* Adjusted to 400px for a smaller modal */
     text-align: center;
     position: relative;
     box-sizing: border-box;
 }
-/* ... (rest of your modal CSS from previous consolidated version, e.g., modal-header, educational-notice, modal-buttons, form styles, etc.) ... */
-
 
 /* Modal Header (for Login/Signup) */
 .modal-header {
@@ -583,6 +581,7 @@ label.block { /* From your ref */
     }
     .modal-content {
         padding: 20px;
+        max-width: 300px; /* Even smaller for mobile */
     }
     .modal-btn {
         font-size: 1em;
