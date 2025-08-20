@@ -379,10 +379,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const carouselIndicatorsContainer = document.getElementById('carousel-indicators');
 
     const offerImages = [
-        'https://via.placeholder.com/1200x300?text=Grand+Summer+Sale',
-        'https://via.placeholder.com/1200x300?text=New+Arrivals+Alert',
-        'https://via.placeholder.com/1200x300?text=Limited-Time+Offer',
-        'https://via.placeholder.com/1200x300?text=Free+Shipping+on+All+Orders'
+        '/img/aug-month-offer.png',
+        '/img/freedom-offer.png',
+        '/img/aug-elec.png',
+        '/img/aug-apparel.png'
     ];
 
     let currentIndex = 0;
