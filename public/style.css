@@ -10,7 +10,7 @@
     --shadow-color: rgba(0,0,0,0.1);
     --error-color: #d9534f; /* Red for error messages */
 
-    /* Educational Project Notice Colors (from your ref) */
+    /* Educational Project Notice Colors */
     --educational-bg: #fffbe6; /* Light yellow */
     --educational-border: #ffe58f; /* Darker yellow border */
     --educational-text: #614d00; /* Dark yellow text */
@@ -21,7 +21,7 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: var(--light-color); /* Matches bg-gray-50 from your ref */
+    background-color: var(--light-color);
     color: var(--text-color);
     line-height: 1.6;
 }
@@ -279,6 +279,14 @@ h2 {
     margin: 5px 0 15px;
 }
 
+/* New: Product action buttons (Add to Cart, Wishlist, Buy Now) */
+.product-card .product-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 15px;
+}
+
 .product-card button {
     background-color: var(--primary-color);
     color: var(--white-color);
@@ -288,11 +296,36 @@ h2 {
     cursor: pointer;
     font-size: 1em;
     transition: background-color 0.3s ease;
+    flex-grow: 1; /* Allow buttons to expand */
+    max-width: 120px; /* Max width for individual action buttons */
 }
 
 .product-card button:hover {
     background-color: var(--primary-dark-color);
 }
+
+.product-card .buy-now-btn {
+    background-color: #ff9800; /* Orange for Buy Now */
+}
+
+.product-card .buy-now-btn:hover {
+    background-color: #fb8c00; /* Darker orange */
+}
+
+.product-card .wishlist-btn {
+    background-color: #f44336; /* Red for Wishlist */
+    font-size: 1.2em; /* Make heart icon larger */
+    padding: 8px 12px; /* Adjust padding for icon */
+    max-width: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.product-card .wishlist-btn:hover {
+    background-color: #e53935;
+}
+
 
 /* --- User Status Bar --- */
 #user-status {
@@ -319,13 +352,13 @@ footer {
     font-size: 0.9em;
 }
 
-/* --- Modal Styles --- */
+/* --- General Modal Styling (for checkout and my orders) --- */
 .modal {
     position: fixed; /* Always stay in place */
     inset: 0; /* Top, right, bottom, left to 0 - covers entire viewport */
     background-color: rgba(0,0,0,0.6); /* Black overlay with opacity */
     z-index: 1000; /* High z-index to sit on top */
-    display: flex; /* IMPORTANT: Set to flex by default, so modal-outer-wrapper is centered */
+    display: flex;
     overflow: auto; /* Enable scroll if content is taller than viewport */
 }
 
@@ -343,19 +376,20 @@ footer {
     box-sizing: border-box; /* Include padding in dimensions */
 }
 
+/* Generic Modal Content Box (for my orders) */
 .modal-content {
     background-color: var(--white-color);
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 5px 15px var(--shadow-color);
     width: 90%; /* Responsive width */
-    max-width: 400px; /* Adjusted to 400px for a smaller modal */
+    max-width: 600px; /* Default for simple modals like My Orders */
     text-align: center;
     position: relative;
     box-sizing: border-box;
 }
 
-/* Modal Header (for Login/Signup) */
+/* Modal Header (for any modal) */
 .modal-header {
     display: flex;
     justify-content: space-between;
@@ -366,7 +400,7 @@ footer {
 .modal-header h2 {
     margin: 0; /* Override default h2 margin */
     text-align: left; /* Align title left */
-    color: var(--text-color); /* Ensure heading color matches text-gray-800 */
+    color: var(--text-color);
 }
 
 .modal-close-btn {
@@ -384,117 +418,213 @@ footer {
     color: #555;
 }
 
-/* Educational Notice */
-.educational-notice {
-    background-color: var(--educational-bg);
-    border: 1px solid var(--educational-border);
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 20px;
-    text-align: center;
+/* --- Checkout Modal Specific Styles --- */
+.checkout-content {
+    background-color: var(--white-color);
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    width: 95%; /* Wider for checkout */
+    max-width: 900px; /* Max width for checkout */
+    box-sizing: border-box;
+    text-align: left; /* Align content left */
 }
-.educational-notice p {
+
+.checkout-layout {
+    display: flex;
+    flex-wrap: wrap; /* Allows wrapping on smaller screens */
+    gap: 30px;
+    margin-top: 20px;
+}
+
+.order-summary-section,
+.delivery-payment-section {
+    flex: 1; /* Flex-grow for equal distribution */
+    min-width: 300px; /* Minimum width before wrapping */
+}
+
+.order-summary-section h3,
+.delivery-payment-section h3 {
+    color: var(--primary-color);
+    font-size: 1.5em;
+    margin-bottom: 15px;
+    text-align: left; /* Align headings left */
+}
+
+#order-summary-details .product-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px dashed var(--border-color);
+}
+
+#order-summary-details .product-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+#order-summary-details .product-item img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    margin-right: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+}
+
+#order-summary-details .product-info {
+    flex-grow: 1;
+}
+
+#order-summary-details .product-info p {
     margin: 0;
-    color: var(--educational-text);
+    font-size: 0.9em;
+    color: #555;
 }
-.educational-notice p:first-child {
+
+#order-summary-details .product-info .product-name {
     font-weight: bold;
+    color: var(--text-color);
+    font-size: 1em;
+}
+
+#order-summary-details .product-price {
+    font-weight: bold;
+    color: var(--primary-dark-color);
+}
+
+.order-total {
+    text-align: right;
+    margin-top: 20px;
+    font-size: 1.3em;
+    color: var(--dark-color);
+}
+
+/* Delivery Address Form */
+#delivery-address-form {
+    gap: 10px; /* Closer spacing for form fields */
+    margin-bottom: 25px;
+}
+
+#delivery-address-form input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
     font-size: 0.9em;
 }
-.educational-notice p:last-child {
-    font-size: 0.75em;
-    margin-top: 5px;
+
+#delivery-address-form input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(64, 224, 208, 0.3);
 }
 
-/* Modal Buttons Styling */
-/* This rule targets direct children of .space-y-4 and applies margin-bottom */
-/* It simulates Tailwind's space-y-4 class for vertical spacing */
-.space-y-4 > *:not(:last-child) {
-    margin-bottom: 1rem; /* 16px */
+/* Payment Methods */
+#payment-methods {
+    margin-bottom: 25px;
 }
 
-.modal-btn {
-    width: 100%; /* Full width for buttons */
-    border: none;
-    padding: 12px 25px;
-    border-radius: 8px; /* Slightly more rounded like your ref */
+.payment-option {
+    display: block; /* Each option on new line */
+    background-color: var(--light-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
     cursor: pointer;
-    font-size: 1.1em;
-    font-weight: bold;
-    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, opacity 0.3s ease;
-}
-
-.modal-btn:hover {
-    opacity: 0.9;
-}
-
-/* Button variants based on your reference */
-.gray-btn { /* Continue as Guest */
-    background-color: #6c757d; /* Equivalent to bg-gray-500/600 */
-    color: var(--white-color);
-}
-
-.gray-btn:hover {
-    background-color: #5a6268;
-}
-
-.primary-modal-btn { /* Login Button (Turquoise) */
-    background-color: var(--primary-color); /* Equivalent to bg-turquoise-600/700 */
-    color: var(--white-color);
-}
-
-.primary-modal-btn:hover {
-    background-color: var(--primary-dark-color);
-}
-
-.bordered-btn { /* Sign Up Button (Bordered Turquoise) */
-    background-color: transparent;
-    border: 1px solid var(--primary-color);
-    color: var(--primary-color);
-}
-
-.bordered-btn:hover {
-    background-color: var(--primary-color);
-    color: var(--white-color);
-}
-
-/* Form Styling */
-form {
+    transition: all 0.2s ease;
     display: flex;
-    flex-direction: column;
-    gap: 15px; /* Space between form fields */
-    margin-top: 25px; /* Space above the form */
-    max-width: 300px; /* Constrain form width */
-    margin-left: auto; /* Center the form horizontally */
-    margin-right: auto; /* Center the form horizontally */
+    align-items: center;
 }
 
-input[type="text"],
-input[type="email"],
-input[type="password"] {
-    width: 100%; /* Full width for inputs */
-    border: 1px solid #ccc; /* Equivalent to border-gray-300 */
-    border-radius: 8px; /* More rounded inputs */
-    padding: 12px 15px;
-    font-size: 1em;
-    outline: none;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+.payment-option:hover {
+    background-color: #e0e0e0;
+    border-color: var(--primary-color);
 }
 
-input[type="text"]:focus,
-input[type="email"]:focus,
-input[type="password"]:focus {
-    border-color: var(--primary-color); /* Focus border turquoise */
-    box-shadow: 0 0 0 2px rgba(64, 224, 208, 0.3); /* Subtle glow */
+.payment-option input[type="radio"] {
+    margin-right: 10px;
+    transform: scale(1.2); /* Larger radio button */
 }
 
-label.block { /* From your ref */
-    display: block;
+/* Place Order Button */
+#place-order-button {
+    width: auto;
+    padding: 12px 30px;
+    margin-left: auto; /* Push to right */
+    margin-right: auto; /* Push to left, effectively centering */
+    display: block; /* Make it a block element to respect margin auto */
+}
+
+/* Order Confirmation Message */
+.order-message {
+    text-align: center;
+    padding: 30px;
+}
+
+.order-message h3 {
+    color: var(--primary-color);
+    font-size: 2em;
+    margin-bottom: 15px;
+}
+
+.order-message p {
+    font-size: 1.1em;
+    color: var(--text-color);
+    margin-bottom: 20px;
+}
+
+.order-message #confirmed-order-id {
+    font-weight: bold;
+    color: var(--dark-color);
+}
+
+#back-to-home-button {
+    margin-top: 20px;
+    width: auto;
+    max-width: 200px;
+}
+
+/* --- My Orders Modal Specific Styles --- */
+#orders-list .order-item {
+    background-color: var(--light-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
     text-align: left;
-    color: #4a5568; /* Equivalent to text-gray-700 */
-    margin-bottom: 8px; /* Equivalent to mb-2 */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
+#orders-list .order-item p {
+    margin: 5px 0;
+    font-size: 0.9em;
+}
+
+#orders-list .order-id {
+    font-weight: bold;
+    color: var(--primary-color);
+    font-size: 1.1em;
+}
+
+#orders-list .order-total-item {
+    font-weight: bold;
+    color: var(--dark-color);
+    text-align: right;
+    margin-top: 10px;
+    border-top: 1px dashed var(--border-color);
+    padding-top: 10px;
+}
+
+#no-orders-message {
+    text-align: center;
+    color: #777;
+    font-style: italic;
+    padding: 20px;
+}
+
+/* --- Form Styling (General) --- */
 .form-error {
     color: var(--error-color); /* A red color for errors */
     font-size: 0.9em;
@@ -504,19 +634,9 @@ label.block { /* From your ref */
     display: block;
 }
 
-/* Text Link Button (for "Don't have an account?" links) */
-.text-link-btn {
-    background: none;
-    border: none;
-    color: var(--primary-color);
-    cursor: pointer;
-    font-size: 1em;
-    text-decoration: underline;
-    transition: color 0.2s ease;
-}
-
-.text-link-btn:hover {
-    color: var(--primary-dark-color);
+/* --- Utility Classes --- */
+.hidden {
+    display: none !important;
 }
 
 /* --- Responsive Design (Media Queries) --- */
@@ -558,6 +678,17 @@ label.block { /* From your ref */
     .carousel-track {
         height: 200px;
     }
+    .checkout-layout {
+        flex-direction: column; /* Stack columns */
+    }
+    .order-summary-section,
+    .delivery-payment-section {
+        min-width: unset; /* Remove min-width on small screens */
+        width: 100%;
+    }
+    .checkout-content {
+        padding: 20px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -582,12 +713,11 @@ label.block { /* From your ref */
     .carousel-track {
         height: 150px;
     }
-    .modal-content {
-        padding: 20px;
-        max-width: 300px; /* Even smaller for mobile */
+    .product-card button {
+        max-width: unset; /* Allow full width buttons */
     }
-    .modal-btn {
-        font-size: 1em;
-        padding: 10px 20px;
+    .product-card .wishlist-btn {
+        max-width: 40px; /* Keep icon button small */
+        padding: 5px 8px;
     }
 }

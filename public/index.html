@@ -8,108 +8,89 @@
 </head>
 <body class="bg-gray-50">
 
-    <!-- Initial Welcome/Choice Modal -->
-    <div id="authModal" class="modal">
+    <!-- Order Summary / Checkout Modal (now a full-page overlay) -->
+    <div id="checkout-modal" class="modal hidden">
         <div class="modal-outer-wrapper">
-            <div class="modal-content">
-                <div class="text-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Welcome to RajuKart</h2>
-                    <p class="text-gray-600 mb-3">Choose how you'd like to continue</p>
-                    <div class="educational-notice">
-                        <p>📚 Educational Project Notice</p>
-                        <p>This is for project purpose - Don't put your personal information here!</p>
+            <div class="checkout-content">
+                <div class="checkout-header">
+                    <h2>Complete Your Order</h2>
+                    <button id="close-checkout-modal" class="modal-close-btn">✕</button>
+                </div>
+
+                <div class="checkout-layout">
+                    <div class="order-summary-section">
+                        <h3>Order Summary</h3>
+                        <div id="order-summary-details">
+                            <!-- Selected product details will be dynamically loaded here -->
+                        </div>
+                        <div class="order-total">
+                            <strong>Total:</strong> <span id="order-total-amount">₹0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="delivery-payment-section">
+                        <h3>Delivery Address</h3>
+                        <form id="delivery-address-form">
+                            <input type="text" id="delivery-fullname" placeholder="Full Name" required>
+                            <input type="tel" id="delivery-phone" placeholder="Phone Number (10 digits)" pattern="[0-9]{10}" required title="Please enter a 10-digit phone number">
+                            <input type="text" id="delivery-address1" placeholder="Address Line 1" required>
+                            <input type="text" id="delivery-address2" placeholder="Address Line 2 (Optional)">
+                            <input type="text" id="delivery-city" placeholder="City" required>
+                            <input type="text" id="delivery-state" placeholder="State" required>
+                            <input type="text" id="delivery-pincode" placeholder="Pincode (6 digits)" pattern="[0-9]{6}" required title="Please enter a 6-digit pincode">
+                        </form>
+
+                        <h3>Payment Method</h3>
+                        <div id="payment-methods" class="space-y-2">
+                            <label class="payment-option">
+                                <input type="radio" name="payment_method" value="COD" required>
+                                Cash On Delivery (COD)
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="payment_method" value="UPI">
+                                UPI Payment
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="payment_method" value="Card">
+                                Credit/Debit Card
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="payment_method" value="NetBanking">
+                                Net Banking
+                            </label>
+                        </div>
+                        <p class="form-error" id="payment-error"></p>
+
+                        <button id="place-order-button" class="modal-btn primary-modal-btn hidden" disabled>Place Your Order</button>
                     </div>
                 </div>
-                
-                <div class="space-y-4">
-                    <button id="guest-button-welcome" class="modal-btn gray-btn">
-                        Continue as Guest
-                    </button>
-                    <button id="login-button-welcome" class="modal-btn primary-modal-btn">
-                        Login
-                    </button>
-                    <button id="signup-button-welcome" class="modal-btn bordered-btn">
-                        Sign Up
-                    </button>
+
+                <div id="order-confirmation-message" class="order-message hidden">
+                    <h3>Your order has been placed!</h3>
+                    <p>Order ID: <span id="confirmed-order-id"></span></p>
+                    <p>Thank you for shopping with RajuKart!</p>
+                    <button id="back-to-home-button" class="modal-btn primary-modal-btn">Back to Home</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Login Form Modal -->
-    <div id="loginModal" class="modal hidden">
+    <!-- My Orders Modal -->
+    <div id="my-orders-modal" class="modal hidden">
         <div class="modal-outer-wrapper">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2 class="text-2xl font-bold text-gray-800">Login</h2>
-                    <button id="close-login-modal" class="modal-close-btn">✕</button>
+                    <h2>My Orders</h2>
+                    <button id="close-my-orders-modal" class="modal-close-btn">✕</button>
                 </div>
-                
-                <form id="login-form">
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-gray-700 mb-2">Username/Email</label>
-                            <input type="text" id="login-username-email" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                        </div>
-                        <div>
-                            <label class="block text-gray-700 mb-2">Password</label>
-                            <input type="password" id="login-password" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                        </div>
-                        <p class="form-error" id="login-error"></p>
-                        <button type="submit" class="modal-btn primary-modal-btn">
-                            Login
-                        </button>
-                    </div>
-                </form>
-                
-                <div class="mt-4 text-center">
-                    <p class="text-gray-600">Don't have an account? 
-                        <button id="show-signup-from-login" class="text-link-btn">Sign up</button>
-                    </p>
+                <div id="orders-list">
+                    <!-- Orders will be dynamically loaded here -->
+                    <p id="no-orders-message">You have no past orders.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Signup Form Modal -->
-    <div id="signupModal" class="modal hidden">
-        <div class="modal-outer-wrapper">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 class="text-2xl font-bold text-gray-800">Sign Up</h2>
-                    <button id="close-signup-modal" class="modal-close-btn">✕</button>
-                </div>
-                
-                <form id="signup-form">
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-gray-700 mb-2">Full Name</label>
-                            <input type="text" id="signup-fullname" placeholder="Raju" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                        </div>
-                        <!-- REMOVED EMAIL INPUT -->
-                        <div>
-                            <label class="block text-gray-700 mb-2">Username</label>
-                            <input type="text" id="signup-username" placeholder="rajukart_user (3-25 chars, lowercase, _, .)" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                        </div>
-                        <div>
-                            <label class="block text-gray-700 mb-2">Password</label>
-                            <input type="password" id="signup-password" placeholder="8+ chars, 1 Upper, 1 Lower, 1 Num, 1 Spec" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                        </div>
-                        <p class="form-error" id="signup-error"></p>
-                        <button type="submit" class="modal-btn primary-modal-btn">
-                            Sign Up
-                        </button>
-                    </div>
-                </form>
-                
-                <div class="mt-4 text-center">
-                    <p class="text-gray-600">Already have an account? 
-                        <button id="show-login-from-signup" class="text-link-btn">Login</button>
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Main Site Content Starts Here -->
     <header>
@@ -136,9 +117,7 @@
                     <span class="icon">&#x1F464;</span>
                     <span class="icon-text" id="profile-text">Profile</span>
                     <div class="profile-dropdown-content">
-                        <a href="#" id="my-account-link">My Account</a>
-                        <a href="#" id="my-orders-link">My Orders</a>
-                        <a href="#" id="settings-link">Settings</a>
+                        <a href="#" id="my-orders-link-header">My Orders</a>
                         <a href="#" id="signout-link">Sign Out</a>
                     </div>
                 </div>

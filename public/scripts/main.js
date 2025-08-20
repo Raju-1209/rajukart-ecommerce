@@ -1,24 +1,29 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
-import { getFirestore, collection, getDocs, query, where, doc, runTransaction, setDoc, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+import { getFirestore, collection, getDocs, query, where, doc, runTransaction, setDoc, serverTimestamp, getDoc, addDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
 // Your web app's Firebase configuration
 // IMPORTANT: REPLACE WITH YOUR ACTUAL VALUES from Firebase Console -> Project Settings -> Your Apps (Web App)
 const firebaseConfig = {
-  apiKey: "AIzaSyBa7_mkNVlIHQgWYytgXy0sLqkfuS-rVK4",
-  authDomain: "rajukart-ae5ca.firebaseapp.com",
-  projectId: "rajukart-ae5ca",
-  storageBucket: "rajukart-ae5ca.firebasestorage.app",
-  messagingSenderId: "570218176052",
-  appId: "1:570218176052:web:ea421005352249c160b461",
-  measurementId: "G-PGTT4FEZEJ"
+  apiKey: "YOUR_API_KEY", // Make sure this is your actual key
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "rajukart-ae5ca", // This should already be correct
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID",
+  measurementId: "YOUR_MEASUREMENT_ID" // If you have Analytics enabled
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app); // Get the Authentication service instance
 const db = getFirestore(app); // Get the Firestore service instance
+
+// --- Global State ---
+let currentUser = null; // Stores the current Firebase Auth user object
+let userCart = [];      // Stores products in the user's cart
+let userWishlist = [];  // Stores products in the user's wishlist
 
 // --- UI Elements ---
 const userStatusDiv = document.getElementById('user-status');
@@ -27,57 +32,115 @@ const featuredProductListDiv = document.getElementById('featured-product-list');
 const categoriesNav = document.querySelector('.categories-nav');
 const profileText = document.getElementById('profile-text'); // For updating profile name
 
-// Modals
-const authModal = document.getElementById('authModal'); // The initial welcome modal
-const loginModal = document.getElementById('loginModal'); // The login form modal
-const signupModal = document.getElementById('signupModal'); // The signup form modal
+// Checkout Modal Elements
+const checkoutModal = document.getElementById('checkout-modal');
+const closeCheckoutModalBtn = document.getElementById('close-checkout-modal');
+const orderSummaryDetails = document.getElementById('order-summary-details');
+const orderTotalAmount = document.getElementById('order-total-amount');
+const deliveryAddressForm = document.getElementById('delivery-address-form');
+const deliveryFullnameInput = document.getElementById('delivery-fullname');
+const deliveryPhoneInput = document.getElementById('delivery-phone');
+const deliveryAddress1Input = document.getElementById('delivery-address1');
+const deliveryAddress2Input = document.getElementById('delivery-address2');
+const deliveryCityInput = document.getElementById('delivery-city');
+const deliveryStateInput = document.getElementById('delivery-state');
+const deliveryPincodeInput = document.getElementById('delivery-pincode');
+const paymentMethodsDiv = document.getElementById('payment-methods');
+const placeOrderButton = document.getElementById('place-order-button');
+const orderConfirmationMessage = document.getElementById('order-confirmation-message');
+const confirmedOrderIdSpan = document.getElementById('confirmed-order-id');
+const backToHomeButton = document.getElementById('back-to-home-button');
+const paymentErrorDisplay = document.getElementById('payment-error'); // For payment method selection error
 
-// Welcome Modal Buttons
-const guestButtonWelcome = document.getElementById('guest-button-welcome');
-const loginButtonWelcome = document.getElementById('login-button-welcome');
-const signupButtonWelcome = document.getElementById('signup-button-welcome');
-
-// Login Form Elements
-const loginForm = document.getElementById('login-form');
-const loginUsernameEmailInput = document.getElementById('login-username-email'); // Now primarily for username
-const loginPasswordInput = document.getElementById('login-password');
-const loginErrorDisplay = document.getElementById('login-error');
-const closeLoginModalBtn = document.getElementById('close-login-modal');
-const showSignupFromLoginBtn = document.getElementById('show-signup-from-login');
-
-// Sign Up Form Elements
-const signupForm = document.getElementById('signup-form');
-const signupFullnameInput = document.getElementById('signup-fullname');
-// const signupEmailInput = document.getElementById('signup-email'); // No longer in HTML
-const signupUsernameInput = document.getElementById('signup-username');
-const signupPasswordInput = document.getElementById('signup-password');
-const signupErrorDisplay = document.getElementById('signup-error');
-const closeSignupModalBtn = document.getElementById('close-signup-modal');
-const showLoginFromSignupBtn = document.getElementById('show-login-from-signup');
+// My Orders Modal Elements
+const myOrdersModal = document.getElementById('my-orders-modal');
+const closeMyOrdersModalBtn = document.getElementById('close-my-orders-modal');
+const myOrdersLinkHeader = document.getElementById('my-orders-link-header');
+const ordersListDiv = document.getElementById('orders-list');
+const noOrdersMessage = document.getElementById('no-orders-message');
 
 // --- Helper Functions for Modal Management ---
 function hideAllModals() {
-    authModal.classList.add('hidden');
-    loginModal.classList.add('hidden');
-    signupModal.classList.add('hidden');
+    checkoutModal.classList.add('hidden');
+    myOrdersModal.classList.add('hidden');
+    // Add other modals here if they exist and need to be hidden
 }
 
-function showAuthModal() {
+function showCheckoutModal() {
     hideAllModals();
-    authModal.classList.remove('hidden');
+    checkoutModal.classList.remove('hidden');
+    // Ensure initial state is correct
+    orderConfirmationMessage.classList.add('hidden');
+    document.querySelector('.checkout-layout').classList.remove('hidden');
+    placeOrderButton.classList.add('hidden'); // Hide until payment selected
+    placeOrderButton.disabled = true; // Disable until valid
+    paymentErrorDisplay.textContent = ''; // Clear previous errors
+    deliveryAddressForm.reset(); // Clear address form
+    paymentMethodsDiv.querySelectorAll('input[type="radio"]').forEach(radio => radio.checked = false); // Clear payment selection
 }
 
-function showLoginModal() {
+function showMyOrdersModal() {
     hideAllModals();
-    loginModal.classList.remove('hidden');
+    myOrdersModal.classList.remove('hidden');
+    fetchAndDisplayOrders(); // Fetch orders when modal is opened
 }
 
-function showSignupModal() {
-    hideAllModals();
-    signupModal.classList.remove('hidden');
+// --- Background Guest Authentication ---
+async function ensureAuthenticatedUser() {
+    return new Promise(resolve => {
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user; // Set global currentUser
+                console.log("[Auth] User is already authenticated. UID:", user.uid);
+                if (user.isAnonymous) {
+                    let guestId = localStorage.getItem('localGuestId');
+                    if (!guestId) {
+                        const userDocRef = doc(db, 'users', user.uid);
+                        const userDocSnap = await getDoc(userDocRef);
+                        if (userDocSnap.exists() && userDocSnap.data().guestId) {
+                            guestId = userDocSnap.data().guestId;
+                        } else {
+                            guestId = await getNextGuestId(user.uid); // Generate if somehow missing
+                        }
+                        localStorage.setItem('localGuestId', guestId);
+                    }
+                    userStatusDiv.textContent = `Welcome, ${guestId}! (Guest)`;
+                    profileText.textContent = guestId;
+                } else {
+                    const userDocSnap = await getDoc(doc(db, 'users', user.uid));
+                    let displayName = user.displayName || user.email;
+                    if (userDocSnap.exists() && userDocSnap.data().username) {
+                        displayName = userDocSnap.data().username;
+                    }
+                    userStatusDiv.textContent = `Welcome, ${displayName}!`;
+                    profileText.textContent = displayName;
+                    localStorage.removeItem('localGuestId'); // Clear guest ID for permanent users
+                }
+            } else {
+                console.log("[Auth] No user authenticated. Signing in anonymously in background...");
+                // Clear any lingering local guest ID if no user is found
+                localStorage.removeItem('localGuestId');
+                // Attempt anonymous sign-in
+                try {
+                    const userCredential = await signInAnonymously(auth);
+                    currentUser = userCredential.user; // Set global currentUser
+                    const guestId = await getNextGuestId(currentUser.uid); // Ensure guest ID is generated/retrieved
+                    localStorage.setItem('localGuestId', guestId);
+                    userStatusDiv.textContent = `Welcome, ${guestId}! (Guest)`;
+                    profileText.textContent = guestId;
+                    console.log(`[Auth] Background anonymous sign-in successful. Guest ID: ${guestId}`);
+                } catch (error) {
+                    console.error("[Auth] Background anonymous sign-in failed:", error);
+                    userStatusDiv.textContent = `Error: Authentication failed.`;
+                }
+            }
+            // Once user is set, resolve the promise and load user-specific data
+            await loadUserSpecificData();
+            fetchAndDisplayProducts(); // Always fetch products after user is determined
+            resolve();
+        });
+    });
 }
-
-// --- Authentication Flow ---
 
 // Function to generate a sequential Guest ID
 async function getNextGuestId(uid) {
@@ -114,298 +177,405 @@ async function getNextGuestId(uid) {
     }
 }
 
-// Handle anonymous sign-in
-async function handleGuestSignIn() {
+// --- Data Loading & Synchronization ---
+async function loadUserSpecificData() {
+    if (!currentUser) {
+        console("[Data Load] No current user to load cart/wishlist.");
+        userCart = [];
+        userWishlist = [];
+        return;
+    }
     try {
-        console.log("[Guest Flow] Attempting anonymous sign-in...");
-        const userCredential = await signInAnonymously(auth);
-        const user = userCredential.user;
-        let guestId = localStorage.getItem('localGuestId');
+        // Load Cart
+        const cartSnapshot = await getDocs(collection(db, 'users', currentUser.uid, 'cart'));
+        userCart = cartSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log("[Data Load] Cart loaded:", userCart);
 
-        if (!guestId) {
-            console.log("[Guest Flow] No localGuestId found, checking Firestore...");
-            const userDocRef = doc(db, 'users', user.uid);
-            const userDocSnap = await getDoc(userDocRef);
-
-            if (!userDocSnap.exists() || !userDocSnap.data().guestId) {
-                console.log("[Guest Flow] No guestId in Firestore, generating new one.");
-                guestId = await getNextGuestId(user.uid);
-            } else {
-                console.log("[Guest Flow] GuestId found in Firestore, retrieving.");
-                guestId = userDocSnap.data().guestId;
-                await setDoc(userDocRef, { lastLoginAt: serverTimestamp() }, { merge: true });
-            }
-            localStorage.setItem('localGuestId', guestId);
-        }
-
-        hideAllModals();
-        profileText.textContent = guestId;
-        console.log(`[Guest Flow] Signed in as guest: ${guestId} (UID: ${user.uid})`);
-        userStatusDiv.textContent = `Welcome, ${guestId}! (Guest)`;
-        fetchAndDisplayProducts();
+        // Load Wishlist
+        const wishlistSnapshot = await getDocs(collection(db, 'users', currentUser.uid, 'wishlist'));
+        userWishlist = wishlistSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log("[Data Load] Wishlist loaded:", userWishlist);
 
     } catch (error) {
-        console.error("[Guest Flow] Anonymous sign-in failed:", error);
-        userStatusDiv.textContent = `Error signing in as guest: ${error.message}`;
+        console.error("[Data Load] Error loading user-specific data:", error);
+        // This will happen if rules don't permit read, or user doc doesn't exist yet for anonymous users
     }
 }
 
-// --- Validation Functions ---
-// Removed validateEmail as it's no longer directly used for user input
-// Password validation remains the same
-function validatePassword(password) {
-    const minLength = 8;
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
-    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/.test(password);
+async function syncCartToFirestore() {
+    if (!currentUser) return;
+    const cartRef = collection(db, 'users', currentUser.uid, 'cart');
+    // Clear existing cart in Firestore
+    const existingCartSnapshot = await getDocs(cartRef);
+    const batch = db.batch();
+    existingCartSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
 
-    return password.length >= minLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar;
+    // Add current userCart to Firestore
+    if (userCart.length > 0) {
+        const newBatch = db.batch();
+        userCart.forEach(item => {
+            const docRef = doc(cartRef, item.id); // Use product ID as document ID for cart item
+            newBatch.set(docRef, item);
+        });
+        await newBatch.commit();
+    }
+    console.log("[Cart Sync] Cart synced to Firestore.");
 }
 
-// New username validation
-function validateUsername(username) {
-    const usernameRegex = /^[a-z_.]+$/; // Only lowercase letters, underscore, full stop
-    const minLength = 3;
-    const maxLength = 25;
+async function syncWishlistToFirestore() {
+    if (!currentUser) return;
+    const wishlistRef = collection(db, 'users', currentUser.uid, 'wishlist');
+    // Clear existing wishlist in Firestore
+    const existingWishlistSnapshot = await getDocs(wishlistRef);
+    const batch = db.batch();
+    existingWishlistSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
 
-    if (username.length < minLength || username.length > maxLength) {
-        return { isValid: false, message: `Username must be between ${minLength} and ${maxLength} characters.` };
+    // Add current userWishlist to Firestore
+    if (userWishlist.length > 0) {
+        const newBatch = db.batch();
+        userWishlist.forEach(item => {
+            const docRef = doc(wishlistRef, item.id); // Use product ID as document ID for wishlist item
+            newBatch.set(docRef, item);
+        });
+        await newBatch.commit();
     }
-    if (!usernameRegex.test(username)) {
-        return { isValid: false, message: 'Username can only contain lowercase letters, underscores (_), and periods (.).' };
-    }
-    return { isValid: true, message: '' };
+    console.log("[Wishlist Sync] Wishlist synced to Firestore.");
 }
 
 
-// --- Sign Up Logic ---
-signupForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    signupErrorDisplay.textContent = '';
-
-    const fullname = signupFullnameInput.value.trim();
-    const username = signupUsernameInput.value.trim();
-    const password = signupPasswordInput.value;
-
-    // Client-side validation
-    if (!fullname || !username || !password) {
-        signupErrorDisplay.textContent = 'All fields are required.';
-        return;
+// --- Cart & Wishlist Actions ---
+function addItemToCart(product) {
+    // Check if product is already in cart, if so, increment quantity
+    const existingItemIndex = userCart.findIndex(item => item.id === product.id);
+    if (existingItemIndex > -1) {
+        userCart[existingItemIndex].quantity = (userCart[existingItemIndex].quantity || 1) + 1;
+    } else {
+        userCart.push({ ...product, quantity: 1 });
     }
+    console.log("[Cart] Added to cart:", product.name, userCart);
+    syncCartToFirestore();
+}
 
-    const usernameValidation = validateUsername(username);
-    if (!usernameValidation.isValid) {
-        signupErrorDisplay.textContent = usernameValidation.message;
-        return;
-    }
-    
-    if (!validatePassword(password)) {
-        signupErrorDisplay.textContent = 'Password must be 8+ characters, with at least one uppercase, one lowercase, one number, and one special character.';
-        return;
-    }
+function removeItemFromCart(productId) {
+    userCart = userCart.filter(item => item.id !== productId);
+    console.log("[Cart] Removed from cart. Current cart:", userCart);
+    syncCartToFirestore();
+}
 
-    // Client-side username uniqueness check (this will fail due to Firestore Rules until replaced by Cloud Function)
+function addToWishlist(product) {
+    const existingItem = userWishlist.find(item => item.id === product.id);
+    if (!existingItem) {
+        userWishlist.push(product);
+        console.log("[Wishlist] Added to wishlist:", product.name, userWishlist);
+        syncWishlistToFirestore();
+    } else {
+        console.log("[Wishlist] Already in wishlist:", product.name);
+    }
+}
+
+function removeFromWishlist(productId) {
+    userWishlist = userWishlist.filter(item => item.id !== productId);
+    console.log("[Wishlist] Removed from wishlist. Current wishlist:", userWishlist);
+    syncWishlistToFirestore();
+}
+
+// --- Product Display Logic ---
+function createProductCard(product) {
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    card.innerHTML = `
+        <img src="${product.imageUrl}" alt="${product.name}">
+        <h3>${product.name}</h3>
+        <p class="price">₹${product.price ? product.price.toFixed(2) : 'N/A'}</p>
+        <div class="product-actions">
+            <button class="add-to-cart-btn" data-product-id="${product.id}">Add to Cart</button>
+            <button class="wishlist-btn" data-product-id="${product.id}">&#x2764;</button>
+            <button class="buy-now-btn" data-product-id="${product.id}">Buy Now</button>
+        </div>
+    `;
+
+    // Attach event listeners to the buttons on the card
+    card.querySelector('.add-to-cart-btn').addEventListener('click', () => addItemToCart(product));
+    card.querySelector('.wishlist-btn').addEventListener('click', () => addToWishlist(product));
+    card.querySelector('.buy-now-btn').addEventListener('click', () => startCheckout(product));
+
+    return card;
+}
+
+async function fetchAndDisplayProducts(category = 'all') {
+    if (!allProductListDiv || !featuredProductListDiv) return;
+
+    allProductListDiv.innerHTML = 'Loading products...';
+    featuredProductListDiv.innerHTML = 'Loading featured products...';
+
     try {
-        console.log("[Sign Up] Checking username existence (client-side - will likely fail due to Firestore Rules)....");
-        const usernameQuery = query(collection(db, 'users'), where('username', '==', username));
-        const usernameSnapshot = await getDocs(usernameQuery);
-        if (!usernameSnapshot.empty) {
-            signupErrorDisplay.textContent = 'This username is already taken.';
+        const productsCol = collection(db, 'products');
+        let q;
+
+        if (category === 'all') {
+            q = productsCol;
+        } else {
+            q = query(productsCol, where('category', '==', category));
+        }
+
+        const productSnapshot = await getDocs(q);
+        const products = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        console.log("[Product Fetch] Raw products array from Firestore:", products);
+
+        allProductListDiv.innerHTML = '';
+        featuredProductListDiv.innerHTML = '';
+
+        if (products.length === 0) {
+            allProductListDiv.innerHTML = `<p>No products found in ${category === 'all' ? 'any category' : category}.</p>`;
+            featuredProductListDiv.innerHTML = `<p>No featured products available.</p>`;
             return;
         }
-    } catch (error) {
-        console.error("[Sign Up] Error checking username existence (as expected, Firestore Rules deny broad client queries):", error);
-        signupErrorDisplay.textContent = "Error checking username availability. (Try again later or contact support if issue persists).";
-        return;
-    }
 
-    // --- Construct internal email for Firebase Auth ---
-    const internalEmail = `${username}@temp.rajukart.com`; 
-
-    try {
-        console.log(`[Sign Up] Creating user with internal email: ${internalEmail} and password...`);
-        // Use the internal email for Firebase Authentication
-        const userCredential = await createUserWithEmailAndPassword(auth, internalEmail, password);
-        const user = userCredential.user;
-
-        console.log("[Sign Up] Saving additional user details to Firestore...");
-        await setDoc(doc(db, 'users', user.uid), {
-            uid: user.uid,
-            fullName: fullname,
-            username: username, // Store the actual username
-            email: internalEmail, // Store the internal email for reference/login
-            createdAt: serverTimestamp(),
-            lastLoginAt: serverTimestamp(),
-            isGuest: false
+        products.forEach(product => {
+            allProductListDiv.appendChild(createProductCard(product));
         });
 
-        console.log("[Sign Up] Updating Firebase Auth profile display name...");
-        await updateProfile(user, { displayName: fullname });
+        products.slice(0, 5).forEach(product => {
+            featuredProductListDiv.appendChild(createProductCard(product));
+        });
 
-        console.log(`[Sign Up] User signed up and profile saved: ${user.uid}`);
-        hideAllModals();
+        console.log(`Displayed ${products.length} products.`);
 
     } catch (error) {
-        console.error("[Sign Up] Sign Up failed:", error);
-        let errorMessage = 'Sign Up failed. Please try again.';
-        if (error.code === 'auth/email-already-in-use') {
-            // This error now means the internalEmail (and thus username) is already taken
-            errorMessage = 'This username is already taken (or there was an internal issue). Please choose another.';
-        } else if (error.code === 'auth/weak-password') {
-             errorMessage = 'Password is too weak. ' + error.message;
-        }
-        signupErrorDisplay.textContent = errorMessage;
+        console.error("Error fetching products:", error);
+        allProductListDiv.innerHTML = '<p>Error loading products. Please check console (Permissions error likely).</p>';
+        featuredProductListDiv.innerHTML = '<p>Error loading featured products.</p>';
     }
-});
+}
 
-
-// --- Login Logic ---
-loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    loginErrorDisplay.textContent = '';
-
-    const usernameOrPasswordInput = loginUsernameEmailInput.value.trim(); // This is now primarily username
-    const password = loginPasswordInput.value;
-
-    if (!usernameOrPasswordInput || !password) {
-        loginErrorDisplay.textContent = 'Both fields are required.';
-        return;
-    }
-
-    try {
-        let emailToLogin = usernameOrPasswordInput;
-
-        // Check if the input LOOKS like an email. If not, assume it's a username.
-        const isEmailFormat = /^[^\s@]+@[^\s@]+\.[a-z]+$/.test(usernameOrPasswordInput); // More generic email regex for login
+// Event listener for category navigation
+categoriesNav.addEventListener('click', (event) => {
+    event.preventDefault();
+    const target = event.target;
+    if (target.tagName === 'A' && target.hasAttribute('data-category')) {
+        categoriesNav.querySelectorAll('a').forEach(link => {
+            link.classList.remove('active-category');
+        });
+        target.classList.add('active-category');
         
-        if (!isEmailFormat) {
-            console.log("[Login] Input is not email format. Attempting username-based login. Checking Firestore for email...");
-            const usernameQuery = query(collection(db, 'users'), where('username', '==', usernameOrPasswordInput));
-            const usernameSnapshot = await getDocs(usernameQuery);
-            
-            if (usernameSnapshot.empty) {
-                loginErrorDisplay.textContent = 'Invalid username or password.';
-                return;
-            }
-            emailToLogin = usernameSnapshot.docs[0].data().email; // Get the internal email
-            console.log(`[Login] Found internal email for username: ${emailToLogin}`);
+        const selectedCategory = target.getAttribute('data-category');
+        console.log(`Category selected: ${selectedCategory}`);
+        fetchAndDisplayProducts(selectedCategory);
+    }
+});
+
+// --- Checkout Flow ---
+let currentCheckoutProduct = null; // Stores the product being bought immediately
+
+function startCheckout(product) {
+    currentCheckoutProduct = product;
+    showCheckoutModal();
+    renderOrderSummary();
+}
+
+function renderOrderSummary() {
+    orderSummaryDetails.innerHTML = '';
+    let total = 0;
+
+    if (currentCheckoutProduct) {
+        // Buy Now flow
+        const itemHtml = `
+            <div class="product-item">
+                <img src="${currentCheckoutProduct.imageUrl}" alt="${currentCheckoutProduct.name}">
+                <div class="product-info">
+                    <p class="product-name">${currentCheckoutProduct.name}</p>
+                    <p>Quantity: 1</p>
+                </div>
+                <span class="product-price">₹${currentCheckoutProduct.price.toFixed(2)}</span>
+            </div>
+        `;
+        orderSummaryDetails.innerHTML = itemHtml;
+        total = currentCheckoutProduct.price;
+    } else if (userCart.length > 0) {
+        // Cart checkout flow (future expansion)
+        // For now, this branch is not directly triggered, but is ready
+        userCart.forEach(item => {
+            const itemHtml = `
+                <div class="product-item">
+                    <img src="${item.imageUrl}" alt="${item.name}">
+                    <div class="product-info">
+                        <p class="product-name">${item.name}</p>
+                        <p>Quantity: ${item.quantity || 1}</p>
+                    </div>
+                    <span class="product-price">₹${(item.price * (item.quantity || 1)).toFixed(2)}</span>
+                </div>
+            `;
+            orderSummaryDetails.innerHTML += itemHtml;
+            total += item.price * (item.quantity || 1);
+        });
+    } else {
+        orderSummaryDetails.innerHTML = '<p>No items in order.</p>';
+    }
+
+    orderTotalAmount.textContent = `₹${total.toFixed(2)}`;
+}
+
+// Payment method selection handler
+paymentMethodsDiv.addEventListener('change', () => {
+    const selectedMethod = paymentMethodsDiv.querySelector('input[name="payment_method"]:checked');
+    if (selectedMethod && deliveryAddressForm.checkValidity()) { // Check form validity too
+        placeOrderButton.classList.remove('hidden');
+        placeOrderButton.disabled = false;
+        paymentErrorDisplay.textContent = ''; // Clear any previous payment errors
+    } else {
+        placeOrderButton.classList.add('hidden');
+        placeOrderButton.disabled = true;
+    }
+});
+
+// Address form input change listener for button visibility
+deliveryAddressForm.addEventListener('input', () => {
+    const selectedMethod = paymentMethodsDiv.querySelector('input[name="payment_method"]:checked');
+    if (selectedMethod && deliveryAddressForm.checkValidity()) {
+        placeOrderButton.classList.remove('hidden');
+        placeOrderButton.disabled = false;
+        paymentErrorDisplay.textContent = '';
+    } else {
+        placeOrderButton.classList.add('hidden');
+        placeOrderButton.disabled = true;
+    }
+});
+
+placeOrderButton.addEventListener('click', async () => {
+    // Client-side validation for address form
+    if (!deliveryAddressForm.checkValidity()) {
+        deliveryAddressForm.reportValidity(); // Show browser's validation messages
+        return;
+    }
+
+    const selectedPaymentMethod = paymentMethodsDiv.querySelector('input[name="payment_method"]:checked');
+    if (!selectedPaymentMethod) {
+        paymentErrorDisplay.textContent = 'Please select a payment method.';
+        return;
+    }
+
+    // All checks pass, proceed with order placement
+    try {
+        const orderId = `RAJU-${Date.now()}`; // Simple unique ID
+        const orderData = {
+            orderId: orderId,
+            userId: currentUser.uid,
+            products: currentCheckoutProduct ? [{ // If it's a direct buy now
+                id: currentCheckoutProduct.id,
+                name: currentCheckoutProduct.name,
+                imageUrl: currentCheckoutProduct.imageUrl,
+                price: currentCheckoutProduct.price,
+                quantity: 1
+            }] : userCart, // Otherwise, if cart is implemented
+            totalAmount: parseFloat(orderTotalAmount.textContent.replace('₹', '')),
+            deliveryAddress: {
+                fullName: deliveryFullnameInput.value.trim(),
+                phone: deliveryPhoneInput.value.trim(),
+                address1: deliveryAddress1Input.value.trim(),
+                address2: deliveryAddress2Input.value.trim(),
+                city: deliveryCityInput.value.trim(),
+                state: deliveryStateInput.value.trim(),
+                pincode: deliveryPincodeInput.value.trim()
+            },
+            paymentMethod: selectedPaymentMethod.value,
+            orderStatus: 'Placed',
+            createdAt: serverTimestamp()
+        };
+
+        // Save order to Firestore (under users subcollection for easy retrieval)
+        await setDoc(doc(db, 'users', currentUser.uid, 'orders', orderId), orderData);
+        console.log("Order placed successfully:", orderData);
+
+        // Hide checkout layout and show confirmation
+        document.querySelector('.checkout-layout').classList.add('hidden');
+        orderConfirmationMessage.classList.remove('hidden');
+        confirmedOrderIdSpan.textContent = orderId;
+
+        // Clear cart if this was a cart checkout (future expansion)
+        userCart = [];
+        syncCartToFirestore();
+
+        currentCheckoutProduct = null; // Clear bought product
+        
+    } catch (error) {
+        console.error("Error placing order:", error);
+        alert("Failed to place order. Please try again. Error: " + error.message);
+    }
+});
+
+backToHomeButton.addEventListener('click', () => {
+    hideAllModals(); // Hide confirmation and checkout modal
+});
+
+// --- My Orders Flow ---
+async function fetchAndDisplayOrders() {
+    if (!currentUser) {
+        ordersListDiv.innerHTML = '<p>Please ensure you are authenticated to view orders.</p>';
+        noOrdersMessage.classList.remove('hidden');
+        return;
+    }
+
+    try {
+        ordersListDiv.innerHTML = '<p>Loading your orders...</p>';
+        noOrdersMessage.classList.add('hidden');
+        const ordersRef = collection(db, 'users', currentUser.uid, 'orders');
+        const q = query(ordersRef, orderBy('createdAt', 'desc'));
+        const ordersSnapshot = await getDocs(q);
+
+        ordersListDiv.innerHTML = ''; // Clear loading message
+
+        if (ordersSnapshot.empty) {
+            noOrdersMessage.classList.remove('hidden');
+            return;
         } else {
-            console.log("[Login] Input looks like email. Attempting email-based login.");
-            // If it's an email format, we'll try to log in directly with it.
-            // Note: This might be a real email or a dummy email from another system.
+            noOrdersMessage.classList.add('hidden');
         }
 
-        console.log(`[Login] Signing in with email: ${emailToLogin}`);
-        await signInWithEmailAndPassword(auth, emailToLogin, password);
-        hideAllModals();
-        console.log("[Login] User logged in successfully.");
+        ordersSnapshot.docs.forEach(doc => {
+            const order = doc.data();
+            const orderItemDiv = document.createElement('div');
+            orderItemDiv.className = 'order-item';
+            
+            let productsSummary = order.products.map(p => `${p.name} (Qty: ${p.quantity})`).join('<br>');
+            let totalAmount = order.totalAmount ? `₹${order.totalAmount.toFixed(2)}` : 'N/A';
+            let orderDate = order.createdAt ? new Date(order.createdAt.toDate()).toLocaleString() : 'N/A';
+
+            orderItemDiv.innerHTML = `
+                <p class="order-id">Order ID: ${order.orderId}</p>
+                <p>Date: ${orderDate}</p>
+                <p>Status: ${order.orderStatus}</p>
+                <p>Items: <br>${productsSummary}</p>
+                <p>Payment Method: ${order.paymentMethod}</p>
+                <p>Delivery To: ${order.deliveryAddress.fullName}, ${order.deliveryAddress.address1}, ${order.deliveryAddress.city}</p>
+                <p class="order-total-item">Total: ${totalAmount}</p>
+            `;
+            ordersListDiv.appendChild(orderItemDiv);
+        });
 
     } catch (error) {
-        console.error("[Login] Login failed:", error);
-        let errorMessage = 'Login failed. Invalid username/email or password.';
-        if (error.code === 'auth/invalid-email' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-             errorMessage = 'Invalid username/email or password.';
-        } else if (error.code === 'auth/too-many-requests') {
-             errorMessage = 'Too many failed login attempts. Please try again later.';
-        }
-        loginErrorDisplay.textContent = errorMessage;
+        console.error("Error fetching orders:", error);
+        ordersListDiv.innerHTML = '<p>Error loading orders. Please check permissions.</p>';
+        noOrdersMessage.classList.add('hidden'); // Ensure message is gone on error
     }
-});
+}
 
 
-// --- Auth State Change Listener ---
-onAuthStateChanged(auth, async (user) => {
-    console.log("onAuthStateChanged triggered. User:", user ? user.uid : "null (signed out)");
-
-    if (user) {
-        let displayId = 'User';
-        if (user.isAnonymous) {
-            console.log("[Auth State] User is anonymous.");
-            let localGuestId = localStorage.getItem('localGuestId');
-            if (localGuestId) {
-                displayId = localGuestId;
-                console.log(`[Auth State] Found localGuestId: ${displayId}`);
-            } else {
-                console.log("[Auth State] No localGuestId, fetching from Firestore for anonymous user.");
-                const userDocRef = doc(db, 'users', user.uid);
-                const userDocSnap = await getDoc(userDocRef);
-                if (userDocSnap.exists() && userDocSnap.data().guestId) {
-                    displayId = userDocSnap.data().guestId;
-                    localStorage.setItem('localGuestId', displayId);
-                    console.log(`[Auth State] Retrieved guestId from Firestore: ${displayId}`);
-                } else {
-                    console.warn("[Auth State] Anonymous user has no guestId in Firestore. Generating new.");
-                    displayId = await getNextGuestId(user.uid);
-                    localStorage.setItem('localGuestId', displayId);
-                }
-            }
-            userStatusDiv.textContent = `Welcome, ${displayId}! (Guest)`;
-        } else {
-            console.log("[Auth State] User is permanent.");
-            // For permanent users, display their username if available, else their full name or email
-            const userDocSnap = await getDoc(doc(db, 'users', user.uid));
-            if (userDocSnap.exists() && userDocSnap.data().username) {
-                displayId = userDocSnap.data().username;
-            } else {
-                displayId = user.displayName || user.email; // Fallback to displayName or email from Auth
-            }
-            userStatusDiv.textContent = `Welcome, ${displayId}!`;
-            localStorage.removeItem('localGuestId');
-        }
-        profileText.textContent = displayId;
-        hideAllModals();
-        fetchAndDisplayProducts();
-
-    } else {
-        console.log("[Auth State] No user authenticated. Showing initial modal.");
-        userStatusDiv.textContent = `You are signed out.`;
-        profileText.textContent = 'Profile';
-        localStorage.removeItem('localGuestId');
-        showAuthModal();
-    }
-});
-
-
-// --- Initial Modal Display & Event Listeners ---
-document.addEventListener('DOMContentLoaded', () => {
-    // Welcome Modal Buttons
-    guestButtonWelcome.addEventListener('click', handleGuestSignIn);
-    loginButtonWelcome.addEventListener('click', showLoginModal);
-    signupButtonWelcome.addEventListener('click', showSignupModal);
-
-    // Login Modal Buttons
-    closeLoginModalBtn.addEventListener('click', showAuthModal);
-    showSignupFromLoginBtn.addEventListener('click', showSignupModal);
-
-    // Signup Modal Buttons
-    closeSignupModalBtn.addEventListener('click', showAuthModal);
-    showLoginFromSignupBtn.addEventListener('click', showLoginModal);
-
-    // Sign Out link (inside profile dropdown)
-    const signoutLink = document.getElementById('signout-link');
-    if (signoutLink) {
-        signoutLink.addEventListener('click', async (e) => {
-            e.preventDefault();
-            try {
-                console.log("[Sign Out] Attempting to sign user out...");
-                await signOut(auth);
-                console.log('[Sign Out] User signed out successfully.');
-            } catch (error) {
-                console.error('[Sign Out] Error signing out:', error);
-            }
-        });
-    }
-
-    // --- Offer Advertisement Carousel Logic ---
+// --- Initial Setup & Event Listeners ---
+document.addEventListener('DOMContentLoaded', async () => {
+    await ensureAuthenticatedUser(); // Ensure user is authenticated first
+    
+    // Carousel setup (from previous versions, unchanged)
     const carouselTrack = document.getElementById('carousel-track');
     const carouselIndicatorsContainer = document.getElementById('carousel-indicators');
 
     const offerImages = [
-        '/img/aug-month-offer.png',
-        '/img/freedom-offer.png',
-        '/img/aug-elec.png',
-        '/img/aug-apparel.png'
+        '/img/offer1.jpg',
+        '/img/offer2.png',
+        'https://via.placeholder.com/1200x300?text=Limited-Time+Offer',
+        'https://via.placeholder.com/1200x300?text=Free+Shipping+on+All+Orders'
     ];
 
     let currentIndex = 0;
@@ -458,99 +628,32 @@ document.addEventListener('DOMContentLoaded', () => {
     if (allProductsLink) {
         allProductsLink.classList.add('active-category');
     }
-});
 
+    // --- Modal Close Buttons ---
+    closeCheckoutModalBtn.addEventListener('click', () => {
+        checkoutModal.classList.add('hidden');
+        currentCheckoutProduct = null; // Clear any product being bought
+    });
+    closeMyOrdersModalBtn.addEventListener('click', () => myOrdersModal.classList.add('hidden'));
 
-// --- Product Display Logic ---
-
-// Helper function to create a product card HTML
-function createProductCard(product) {
-    const card = document.createElement('div');
-    card.className = 'product-card';
-    card.innerHTML = `
-        <img src="${product.imageUrl}" alt="${product.name}">
-        <h3>${product.name}</h3>
-        <p class="price">₹${product.price ? product.price.toFixed(2) : 'N/A'}</p>
-        <button class="add-to-cart-btn" data-product-id="${product.product_id}" data-action="add-to-cart">Add to Cart</button>
-        <button class="wishlist-btn" data-product-id="${product.product_id}" data-action="add-to-wishlist">&#x2764;</button>
-    `;
-    return card;
-}
-
-// Function to fetch and display products
-async function fetchAndDisplayProducts(category = 'all') {
-    if (!allProductListDiv || !featuredProductListDiv) return;
-
-    allProductListDiv.innerHTML = 'Loading products...';
-    featuredProductListDiv.innerHTML = 'Loading featured products...';
-
-    try {
-        const productsCol = collection(db, 'products');
-        let q;
-
-        if (category === 'all') {
-            q = productsCol;
-        } else {
-            q = query(productsCol, where('category', '==', category));
-        }
-
-        const productSnapshot = await getDocs(q);
-        const products = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        console.log("[Product Fetch] Raw products array from Firestore:", products);
-
-        allProductListDiv.innerHTML = '';
-        featuredProductListDiv.innerHTML = '';
-
-        if (products.length === 0) {
-            allProductListDiv.innerHTML = `<p>No products found in ${category === 'all' ? 'any category' : category}.</p>`;
-            featuredProductListDiv.innerHTML = `<p>No featured products available.</p>`;
-            return;
-        }
-
-        products.forEach(product => {
-            allProductListDiv.appendChild(createProductCard(product));
+    // --- Header Nav Links ---
+    const signoutLink = document.getElementById('signout-link');
+    if (signoutLink) {
+        signoutLink.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                console.log("[Sign Out] Attempting to sign user out...");
+                await signOut(auth);
+                console.log('[Sign Out] User signed out successfully.');
+                // onAuthStateChanged in ensureAuthenticatedUser will handle re-authentication
+            } catch (error) {
+                console.error('[Sign Out] Error signing out:', error);
+            }
         });
-
-        products.slice(0, 5).forEach(product => {
-            featuredProductListDiv.appendChild(createProductCard(product));
-        });
-
-        console.log(`Displayed ${products.length} products.`);
-
-    } catch (error) {
-        console.error("Error fetching products:", error);
-        allProductListDiv.innerHTML = '<p>Error loading products. Please check console.</p>';
-        featuredProductListDiv.innerHTML = '<p>Error loading featured products.</p>';
     }
-}
 
-// Event listener for category navigation
-categoriesNav.addEventListener('click', (event) => {
-    event.preventDefault();
-    const target = event.target;
-    if (target.tagName === 'A' && target.hasAttribute('data-category')) {
-        categoriesNav.querySelectorAll('a').forEach(link => {
-            link.classList.remove('active-category');
-        });
-        target.classList.add('active-category');
-        
-        const selectedCategory = target.getAttribute('data-category');
-        console.log(`Category selected: ${selectedCategory}`);
-        fetchAndDisplayProducts(selectedCategory);
-    }
-});
-
-
-// --- Feature Restriction Logic ---
-document.addEventListener('click', (event) => {
-    const target = event.target;
-    if (target.tagName === 'BUTTON' && (target.classList.contains('add-to-cart-btn') || target.classList.contains('wishlist-btn'))) {
-        const user = auth.currentUser;
-        if (!user || user.isAnonymous) {
-            event.preventDefault();
-            alert('Please Login or Sign Up to add items to your cart or wishlist!');
-            showAuthModal();
-        }
-    }
+    myOrdersLinkHeader.addEventListener('click', (e) => {
+        e.preventDefault();
+        showMyOrdersModal();
+    });
 });

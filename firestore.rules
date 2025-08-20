@@ -2,32 +2,36 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow any user (authenticated or unauthenticated) to read product data.
+    // Products: Can be read by anyone
     match /products/{productId} {
       allow read: if true;
     }
 
-    // Allow authenticated users to manage their own user documents
+    // Users:
+    // Any authenticated user can create their own user document (isGuest: true for anonymous, isGuest: false for email/password)
+    // Users can read their own user document
+    // Users can update their own user document (but not change their isGuest status if already set)
     match /users/{userId} {
-      // A user can create their own document (e.g., when signing up)
       allow create: if request.auth.uid == userId;
-      // A user can read their own document (e.g., to get their full name, username, guest ID)
       allow read: if request.auth.uid == userId;
-      // A user can update their own document (e.g., changing profile info, but not isGuest)
       allow update: if request.auth.uid == userId && !(request.resource.data.isGuest is bool);
-      // Deny delete
+      // Deny delete for user documents
       allow delete: if false;
     }
 
-    // Rule for the guest ID counter.
-    // WARNING: This allows anyone to update the counter.
-    // For production, this 'update' should ideally be managed by a Cloud Function.
+    // Guest Counter (TEMPORARY - will need Cloud Function later for security)
+    // Allows clients to read and update a single counter document for sequential guest IDs.
     match /settings/guestCounter {
-      allow read: if true; // Allow reading the current count
-      allow update: if true; // Allow client to update the count (TEMPORARY - INSECURE FOR PRODUCTION)
+      allow read, update: if true;
     }
 
-    // Catch-all rule: Deny all reads and writes for any other collections or documents not explicitly allowed above.
+    // User-specific Subcollections: cart, wishlist, orders
+    // Only the authenticated user can read/write their own data within their subcollections.
+    match /users/{userId}/{collectionName}/{docId} {
+      allow read, write: if request.auth.uid == userId;
+    }
+
+    // Catch-all: Deny all other reads and writes for any collection/document not explicitly allowed above.
     match /{document=**} {
       allow read: if false;
       allow write: if false;
