@@ -24,7 +24,7 @@ const db = getFirestore(app); // Get the Firestore service instance
 let currentUser = null; // Stores the current Firebase Auth user object
 let userCart = [];      // Stores products in the user's cart (array of product objects with quantity)
 let userWishlist = [];  // Stores products in the user's wishlist (array of product objects)
-let currentCheckoutProduct = null; // Stores the product being bought directly via "Buy Now"
+let currentProductForCheckout = null; // Stores the product selected via "Buy Now" button
 
 // --- UI Elements ---
 const userStatusDiv = document.getElementById('user-status');
@@ -35,7 +35,7 @@ const profileText = document.getElementById('profile-text'); // For updating pro
 
 // Header Icons
 const cartIconHeader = document.getElementById('cart-icon-header');
-const wishlistIconHeader = document.querySelector('.header-icons .icon-item:first-child'); // First icon item
+const wishlistIconHeader = document.querySelector('.header-icons .icon-item:first-child'); // Target the first icon-item for wishlist
 const cartCountBadge = document.getElementById('cart-count');
 
 // Modals
@@ -105,7 +105,7 @@ function showCheckoutModal() {
     updatePlaceOrderButtonState(); // Update button state based on initial form
     clearAddressFormErrors(); // Clear any previous address form errors
     paymentErrorMessage.textContent = ''; // Clear payment error
-    renderOrderSummary(); // Render the summary for currentCheckoutProduct or cart
+    renderOrderSummary(); // Render the summary for currentProductForCheckout or cart
 }
 
 function showMyOrdersModal() {
@@ -496,8 +496,53 @@ categoriesNav.addEventListener('click', (event) => {
 });
 
 // --- Checkout Flow ---
-// startCheckout function updated to use currentCheckoutProduct or userCart
-// renderOrderSummary function updated to use currentCheckoutProduct or userCart
+function startCheckout(product = null) {
+    // If a product is passed, it's a "Buy Now" direct purchase
+    currentProductForCheckout = product; 
+    
+    // If no product is passed, it implies checkout from cart (if userCart is populated)
+    // For now, this is triggered only by "Buy Now" or "Proceed to Checkout" button
+    
+    showCheckoutModal();
+    renderOrderSummary();
+}
+
+function renderOrderSummary() {
+    orderSummaryDetails.innerHTML = '';
+    let total = 0;
+    let itemsToRender = [];
+
+    if (currentProductForCheckout) {
+        // Buy Now flow
+        itemsToRender.push({ ...currentProductForCheckout, quantity: 1 });
+    } else if (userCart.length > 0) {
+        // Cart checkout flow
+        itemsToRender = userCart;
+    } else {
+        orderSummaryDetails.innerHTML = '<p>No items selected for order.</p>';
+        orderTotalAmount.textContent = `₹0.00`;
+        return;
+    }
+
+    itemsToRender.forEach(item => {
+        const itemPrice = item.price * (item.quantity || 1);
+        total += itemPrice;
+        const itemHtml = `
+            <div class="product-item">
+                <img src="${item.imageUrl}" alt="${item.name}">
+                <div class="product-info">
+                    <p class="product-name">${item.name}</p>
+                    <p>Qty: ${item.quantity || 1}</p>
+                </div>
+                <span class="product-price">₹${itemPrice.toFixed(2)}</span>
+            </div>
+        `;
+        orderSummaryDetails.innerHTML += itemHtml;
+    });
+
+    orderTotalAmount.textContent = `₹${total.toFixed(2)}`;
+}
+
 
 // --- Address Form Validation ---
 function validateAddressForm() {
@@ -627,16 +672,16 @@ placeOrderButton.addEventListener('click', async () => {
         const orderId = `RAJU-${Date.now()}`; // Simple unique ID
         
         let productsInOrder = [];
-        if (currentCheckoutProduct) {
-            productsInOrder.push({ // If it's a direct buy now
-                id: currentCheckoutProduct.id,
-                name: currentCheckoutProduct.name,
-                imageUrl: currentCheckoutProduct.imageUrl,
-                price: currentCheckoutProduct.price,
+        if (currentProductForCheckout) { // If it's a direct buy now
+            productsInOrder.push({ 
+                id: currentProductForCheckout.id,
+                name: currentProductForCheckout.name,
+                imageUrl: currentProductForCheckout.imageUrl,
+                price: currentProductForCheckout.price,
                 quantity: 1
             });
-        } else {
-            productsInOrder = userCart; // Otherwise, take items from cart
+        } else { // Otherwise, take items from cart
+            productsInOrder = userCart.map(item => ({...item})); // Deep copy to prevent modifying userCart directly
         }
 
         const totalAmountValue = parseFloat(orderTotalAmount.textContent.replace('₹', ''));
@@ -665,7 +710,7 @@ placeOrderButton.addEventListener('click', async () => {
         console.log("Order placed successfully:", orderData);
 
         // Clear cart if this was a cart checkout
-        if (!currentCheckoutProduct) { // Only clear cart if it wasn't a direct buy now
+        if (!currentProductForCheckout) { // Only clear cart if it wasn't a direct buy now
             userCart = [];
             await syncCartToFirestore(); // Ensure Firestore cart is also cleared
         }
@@ -675,7 +720,7 @@ placeOrderButton.addEventListener('click', async () => {
         orderConfirmationMessage.classList.remove('hidden');
         confirmedOrderIdSpan.textContent = orderId;
 
-        currentCheckoutProduct = null; // Reset for next order
+        currentProductForCheckout = null; // Reset for next order
         
     } catch (error) {
         console.error("Error placing order:", error);
@@ -749,10 +794,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const carouselIndicatorsContainer = document.getElementById('carousel-indicators');
 
     const offerImages = [
-        '/img/aug-month-offer.png',
-        '/img/freedom-offer.png',
-        '/img/aug-elec.png',
-        '/img/aug-apparel.png'
+        '/img/offer1.jpg',
+        '/img/offer2.png',
+        'https://via.placeholder.com/1200x300?text=Limited-Time+Offer',
+        'https://via.placeholder.com/1200x300?text=Free+Shipping+on+All+Orders'
     ];
 
     let currentIndex = 0;
@@ -809,7 +854,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Modal Close Buttons ---
     closeCheckoutModalBtn.addEventListener('click', () => {
         checkoutModal.classList.add('hidden');
-        currentCheckoutProduct = null; // Clear any product being bought
+        currentProductForCheckout = null; // Clear any product being bought
     });
     closeMyOrdersModalBtn.addEventListener('click', () => myOrdersModal.classList.add('hidden'));
     closeCartModalBtn.addEventListener('click', () => cartModal.classList.add('hidden'));
@@ -847,9 +892,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     proceedToCheckoutBtn.addEventListener('click', () => {
-        // Clear currentCheckoutProduct as we are checking out the entire cart
-        currentCheckoutProduct = null; 
-        showCheckoutModal();
+        // Clear currentProductForCheckout as we are checking out the entire cart
+        currentProductForCheckout = null; 
+        startCheckout(); // Call startCheckout without product to indicate cart checkout
     });
 
     // Initial state for place order button (disabled)
