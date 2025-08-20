@@ -1,7 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
-import { getFirestore, collection, getDocs, query, where, doc, runTransaction, setDoc, serverTimestamp, getDoc, addDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, where, doc, runTransaction, setDoc, serverTimestamp, getDoc, addDoc, orderBy, deleteDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
 // Your web app's Firebase configuration
 // IMPORTANT: REPLACE WITH YOUR ACTUAL VALUES from Firebase Console -> Project Settings -> Your Apps (Web App)
@@ -22,8 +22,9 @@ const db = getFirestore(app); // Get the Firestore service instance
 
 // --- Global State ---
 let currentUser = null; // Stores the current Firebase Auth user object
-let userCart = [];      // Stores products in the user's cart
-let userWishlist = [];  // Stores products in the user's wishlist
+let userCart = [];      // Stores products in the user's cart (array of product objects with quantity)
+let userWishlist = [];  // Stores products in the user's wishlist (array of product objects)
+let currentCheckoutProduct = null; // Stores the product being bought directly via "Buy Now"
 
 // --- UI Elements ---
 const userStatusDiv = document.getElementById('user-status');
@@ -31,6 +32,31 @@ const allProductListDiv = document.getElementById('all-product-list');
 const featuredProductListDiv = document.getElementById('featured-product-list');
 const categoriesNav = document.querySelector('.categories-nav');
 const profileText = document.getElementById('profile-text'); // For updating profile name
+
+// Header Icons
+const cartIconHeader = document.getElementById('cart-icon-header');
+const wishlistIconHeader = document.querySelector('.header-icons .icon-item:first-child'); // First icon item
+const cartCountBadge = document.getElementById('cart-count');
+
+// Modals
+const cartModal = document.getElementById('cart-modal');
+const closeCartModalBtn = document.getElementById('close-cart-modal');
+const cartItemsListDiv = document.getElementById('cart-items-list');
+const emptyCartMessage = document.getElementById('empty-cart-message');
+const cartTotalSummaryDiv = document.getElementById('cart-total-summary');
+const cartTotalAmountSpan = document.getElementById('cart-total-amount');
+const proceedToCheckoutBtn = document.getElementById('proceed-to-checkout-btn');
+
+const wishlistModal = document.getElementById('wishlist-modal');
+const closeWishlistModalBtn = document.getElementById('close-wishlist-modal');
+const wishListItemsListDiv = document.getElementById('wishlist-items-list');
+const emptyWishlistMessage = document.getElementById('empty-wishlist-message');
+
+const myOrdersModal = document.getElementById('my-orders-modal');
+const closeMyOrdersModalBtn = document.getElementById('close-my-orders-modal');
+const myOrdersLinkHeader = document.getElementById('my-orders-link-header');
+const ordersListDiv = document.getElementById('orders-list');
+const noOrdersMessage = document.getElementById('no-orders-message');
 
 // Checkout Modal Elements
 const checkoutModal = document.getElementById('checkout-modal');
@@ -50,40 +76,56 @@ const placeOrderButton = document.getElementById('place-order-button');
 const orderConfirmationMessage = document.getElementById('order-confirmation-message');
 const confirmedOrderIdSpan = document.getElementById('confirmed-order-id');
 const backToHomeButton = document.getElementById('back-to-home-button');
-const paymentErrorDisplay = document.getElementById('payment-error'); // For payment method selection error
+const paymentErrorMessage = document.getElementById('payment-error-message'); // For payment method selection error
 
-// My Orders Modal Elements
-const myOrdersModal = document.getElementById('my-orders-modal');
-const closeMyOrdersModalBtn = document.getElementById('close-my-orders-modal');
-const myOrdersLinkHeader = document.getElementById('my-orders-link-header');
-const ordersListDiv = document.getElementById('orders-list');
-const noOrdersMessage = document.getElementById('no-orders-message');
+// Address Form Error Spans
+const errorFullname = document.getElementById('error-fullname');
+const errorPhone = document.getElementById('error-phone');
+const errorAddress1 = document.getElementById('error-address1');
+const errorCity = document.getElementById('error-city');
+const errorState = document.getElementById('error-state');
+const errorPincode = document.getElementById('error-pincode');
+
 
 // --- Helper Functions for Modal Management ---
 function hideAllModals() {
     checkoutModal.classList.add('hidden');
     myOrdersModal.classList.add('hidden');
-    // Add other modals here if they exist and need to be hidden
+    cartModal.classList.add('hidden');
+    wishlistModal.classList.add('hidden');
 }
 
 function showCheckoutModal() {
     hideAllModals();
     checkoutModal.classList.remove('hidden');
-    // Ensure initial state is correct
-    orderConfirmationMessage.classList.add('hidden');
-    document.querySelector('.checkout-layout').classList.remove('hidden');
-    placeOrderButton.classList.add('hidden'); // Hide until payment selected
-    placeOrderButton.disabled = true; // Disable until valid
-    paymentErrorDisplay.textContent = ''; // Clear previous errors
+    orderConfirmationMessage.classList.add('hidden'); // Hide confirmation message
+    document.querySelector('.checkout-layout').classList.remove('hidden'); // Show checkout layout
     deliveryAddressForm.reset(); // Clear address form
     paymentMethodsDiv.querySelectorAll('input[type="radio"]').forEach(radio => radio.checked = false); // Clear payment selection
+    updatePlaceOrderButtonState(); // Update button state based on initial form
+    clearAddressFormErrors(); // Clear any previous address form errors
+    paymentErrorMessage.textContent = ''; // Clear payment error
+    renderOrderSummary(); // Render the summary for currentCheckoutProduct or cart
 }
 
 function showMyOrdersModal() {
     hideAllModals();
     myOrdersModal.classList.remove('hidden');
-    fetchAndDisplayOrders(); // Fetch orders when modal is opened
+    fetchAndDisplayOrders();
 }
+
+function showCartModal() {
+    hideAllModals();
+    cartModal.classList.remove('hidden');
+    renderCartItems();
+}
+
+function showWishlistModal() {
+    hideAllModals();
+    wishlistModal.classList.remove('hidden');
+    renderWishlistItems();
+}
+
 
 // --- Background Guest Authentication ---
 async function ensureAuthenticatedUser() {
@@ -108,7 +150,7 @@ async function ensureAuthenticatedUser() {
                     profileText.textContent = guestId;
                 } else {
                     const userDocSnap = await getDoc(doc(db, 'users', user.uid));
-                    let displayName = user.displayName || user.email;
+                    let displayName = user.displayName || user.email; // Default to email if no displayName
                     if (userDocSnap.exists() && userDocSnap.data().username) {
                         displayName = userDocSnap.data().username;
                     }
@@ -118,9 +160,7 @@ async function ensureAuthenticatedUser() {
                 }
             } else {
                 console.log("[Auth] No user authenticated. Signing in anonymously in background...");
-                // Clear any lingering local guest ID if no user is found
-                localStorage.removeItem('localGuestId');
-                // Attempt anonymous sign-in
+                localStorage.removeItem('localGuestId'); // Clear any lingering local guest ID if no user is found
                 try {
                     const userCredential = await signInAnonymously(auth);
                     currentUser = userCredential.user; // Set global currentUser
@@ -134,10 +174,9 @@ async function ensureAuthenticatedUser() {
                     userStatusDiv.textContent = `Error: Authentication failed.`;
                 }
             }
-            // Once user is set, resolve the promise and load user-specific data
-            await loadUserSpecificData();
+            await loadUserSpecificData(); // Load cart/wishlist
             fetchAndDisplayProducts(); // Always fetch products after user is determined
-            resolve();
+            resolve(); // Resolve the promise once authentication and data load are complete
         });
     });
 }
@@ -180,7 +219,7 @@ async function getNextGuestId(uid) {
 // --- Data Loading & Synchronization ---
 async function loadUserSpecificData() {
     if (!currentUser) {
-        console("[Data Load] No current user to load cart/wishlist.");
+        console.log("[Data Load] No current user to load cart/wishlist.");
         userCart = [];
         userWishlist = [];
         return;
@@ -190,6 +229,7 @@ async function loadUserSpecificData() {
         const cartSnapshot = await getDocs(collection(db, 'users', currentUser.uid, 'cart'));
         userCart = cartSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         console.log("[Data Load] Cart loaded:", userCart);
+        updateCartCountBadge();
 
         // Load Wishlist
         const wishlistSnapshot = await getDocs(collection(db, 'users', currentUser.uid, 'wishlist'));
@@ -198,56 +238,83 @@ async function loadUserSpecificData() {
 
     } catch (error) {
         console.error("[Data Load] Error loading user-specific data:", error);
-        // This will happen if rules don't permit read, or user doc doesn't exist yet for anonymous users
     }
 }
 
 async function syncCartToFirestore() {
     if (!currentUser) return;
     const cartRef = collection(db, 'users', currentUser.uid, 'cart');
-    // Clear existing cart in Firestore
-    const existingCartSnapshot = await getDocs(cartRef);
     const batch = db.batch();
-    existingCartSnapshot.docs.forEach(doc => batch.delete(doc.ref));
-    await batch.commit();
 
-    // Add current userCart to Firestore
-    if (userCart.length > 0) {
-        const newBatch = db.batch();
-        userCart.forEach(item => {
-            const docRef = doc(cartRef, item.id); // Use product ID as document ID for cart item
-            newBatch.set(docRef, item);
-        });
-        await newBatch.commit();
+    // Remove items not in current userCart
+    const existingCartSnapshot = await getDocs(cartRef);
+    const existingProductIds = new Set(existingCartSnapshot.docs.map(doc => doc.id));
+    const currentUserCartIds = new Set(userCart.map(item => item.id));
+
+    existingProductIds.forEach(id => {
+        if (!currentUserCartIds.has(id)) {
+            batch.delete(doc(cartRef, id));
+        }
+    });
+
+    // Add/Update items in current userCart
+    userCart.forEach(item => {
+        const docRef = doc(cartRef, item.id);
+        batch.set(docRef, item); // Use set with merge if needed, for simplicity set overwrites
+    });
+
+    try {
+        await batch.commit();
+        console.log("[Cart Sync] Cart synced to Firestore.");
+        updateCartCountBadge();
+    } catch (error) {
+        console.error("[Cart Sync] Error syncing cart to Firestore:", error);
     }
-    console.log("[Cart Sync] Cart synced to Firestore.");
 }
 
 async function syncWishlistToFirestore() {
     if (!currentUser) return;
     const wishlistRef = collection(db, 'users', currentUser.uid, 'wishlist');
-    // Clear existing wishlist in Firestore
-    const existingWishlistSnapshot = await getDocs(wishlistRef);
     const batch = db.batch();
-    existingWishlistSnapshot.docs.forEach(doc => batch.delete(doc.ref));
-    await batch.commit();
 
-    // Add current userWishlist to Firestore
-    if (userWishlist.length > 0) {
-        const newBatch = db.batch();
-        userWishlist.forEach(item => {
-            const docRef = doc(wishlistRef, item.id); // Use product ID as document ID for wishlist item
-            newBatch.set(docRef, item);
-        });
-        await newBatch.commit();
+    // Remove items not in current userWishlist
+    const existingWishlistSnapshot = await getDocs(wishlistRef);
+    const existingProductIds = new Set(existingWishlistSnapshot.docs.map(doc => doc.id));
+    const currentUserWishlistIds = new Set(userWishlist.map(item => item.id));
+
+    existingProductIds.forEach(id => {
+        if (!currentUserWishlistIds.has(id)) {
+            batch.delete(doc(wishlistRef, id));
+        }
+    });
+
+    // Add/Update items in current userWishlist
+    userWishlist.forEach(item => {
+        const docRef = doc(wishlistRef, item.id);
+        batch.set(docRef, item);
+    });
+
+    try {
+        await batch.commit();
+        console.log("[Wishlist Sync] Wishlist synced to Firestore.");
+    } catch (error) {
+        console.error("[Wishlist Sync] Error syncing wishlist to Firestore:", error);
     }
-    console.log("[Wishlist Sync] Wishlist synced to Firestore.");
+}
+
+function updateCartCountBadge() {
+    const totalItems = userCart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+    cartCountBadge.textContent = totalItems;
+    if (totalItems > 0) {
+        cartCountBadge.classList.remove('hidden');
+    } else {
+        cartCountBadge.classList.add('hidden');
+    }
 }
 
 
 // --- Cart & Wishlist Actions ---
 function addItemToCart(product) {
-    // Check if product is already in cart, if so, increment quantity
     const existingItemIndex = userCart.findIndex(item => item.id === product.id);
     if (existingItemIndex > -1) {
         userCart[existingItemIndex].quantity = (userCart[existingItemIndex].quantity || 1) + 1;
@@ -256,12 +323,16 @@ function addItemToCart(product) {
     }
     console.log("[Cart] Added to cart:", product.name, userCart);
     syncCartToFirestore();
+    updateCartCountBadge();
+    renderCartItems(); // Re-render cart modal if open
 }
 
 function removeItemFromCart(productId) {
     userCart = userCart.filter(item => item.id !== productId);
     console.log("[Cart] Removed from cart. Current cart:", userCart);
     syncCartToFirestore();
+    updateCartCountBadge();
+    renderCartItems();
 }
 
 function addToWishlist(product) {
@@ -270,6 +341,7 @@ function addToWishlist(product) {
         userWishlist.push(product);
         console.log("[Wishlist] Added to wishlist:", product.name, userWishlist);
         syncWishlistToFirestore();
+        renderWishlistItems(); // Re-render wishlist modal if open
     } else {
         console.log("[Wishlist] Already in wishlist:", product.name);
     }
@@ -279,6 +351,62 @@ function removeFromWishlist(productId) {
     userWishlist = userWishlist.filter(item => item.id !== productId);
     console.log("[Wishlist] Removed from wishlist. Current wishlist:", userWishlist);
     syncWishlistToFirestore();
+    renderWishlistItems();
+}
+
+function renderCartItems() {
+    cartItemsListDiv.innerHTML = '';
+    let total = 0;
+    if (userCart.length === 0) {
+        emptyCartMessage.classList.remove('hidden');
+        cartTotalSummaryDiv.classList.add('hidden');
+        proceedToCheckoutBtn.classList.add('hidden');
+    } else {
+        emptyCartMessage.classList.add('hidden');
+        cartTotalSummaryDiv.classList.remove('hidden');
+        proceedToCheckoutBtn.classList.remove('hidden');
+        userCart.forEach(item => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'cart-item';
+            const itemPrice = item.price * (item.quantity || 1);
+            total += itemPrice;
+            itemDiv.innerHTML = `
+                <img src="${item.imageUrl}" alt="${item.name}">
+                <div class="cart-item-info">
+                    <p class="item-name">${item.name}</p>
+                    <p>Qty: ${item.quantity || 1}</p>
+                </div>
+                <span class="cart-item-price">₹${itemPrice.toFixed(2)}</span>
+                <button class="remove-btn" data-product-id="${item.id}">Remove</button>
+            `;
+            itemDiv.querySelector('.remove-btn').addEventListener('click', () => removeItemFromCart(item.id));
+            cartItemsListDiv.appendChild(itemDiv);
+        });
+    }
+    cartTotalAmountSpan.textContent = `₹${total.toFixed(2)}`;
+}
+
+function renderWishlistItems() {
+    wishListItemsListDiv.innerHTML = '';
+    if (userWishlist.length === 0) {
+        emptyWishlistMessage.classList.remove('hidden');
+    } else {
+        emptyWishlistMessage.classList.add('hidden');
+        userWishlist.forEach(item => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'wishlist-item';
+            itemDiv.innerHTML = `
+                <img src="${item.imageUrl}" alt="${item.name}">
+                <div class="wishlist-item-info">
+                    <p class="item-name">${item.name}</p>
+                    <p>Price: ₹${item.price.toFixed(2)}</p>
+                </div>
+                <button class="remove-btn" data-product-id="${item.id}">Remove</button>
+            `;
+            itemDiv.querySelector('.remove-btn').addEventListener('click', () => removeFromWishlist(item.id));
+            wishListItemsListDiv.appendChild(itemDiv);
+        });
+    }
 }
 
 // --- Product Display Logic ---
@@ -368,10 +496,8 @@ categoriesNav.addEventListener('click', (event) => {
 });
 
 // --- Checkout Flow ---
-let currentCheckoutProduct = null; // Stores the product being bought immediately
-
-function startCheckout(product) {
-    currentCheckoutProduct = product;
+function startCheckout(product = null) {
+    currentCheckoutProduct = product; // Can be null if starting from cart
     showCheckoutModal();
     renderOrderSummary();
 }
@@ -379,103 +505,187 @@ function startCheckout(product) {
 function renderOrderSummary() {
     orderSummaryDetails.innerHTML = '';
     let total = 0;
+    let itemsToRender = [];
 
     if (currentCheckoutProduct) {
-        // Buy Now flow
-        const itemHtml = `
-            <div class="product-item">
-                <img src="${currentCheckoutProduct.imageUrl}" alt="${currentCheckoutProduct.name}">
-                <div class="product-info">
-                    <p class="product-name">${currentCheckoutProduct.name}</p>
-                    <p>Quantity: 1</p>
-                </div>
-                <span class="product-price">₹${currentCheckoutProduct.price.toFixed(2)}</span>
-            </div>
-        `;
-        orderSummaryDetails.innerHTML = itemHtml;
-        total = currentCheckoutProduct.price;
+        itemsToRender.push({ ...currentCheckoutProduct, quantity: 1 });
     } else if (userCart.length > 0) {
-        // Cart checkout flow (future expansion)
-        // For now, this branch is not directly triggered, but is ready
-        userCart.forEach(item => {
-            const itemHtml = `
-                <div class="product-item">
-                    <img src="${item.imageUrl}" alt="${item.name}">
-                    <div class="product-info">
-                        <p class="product-name">${item.name}</p>
-                        <p>Quantity: ${item.quantity || 1}</p>
-                    </div>
-                    <span class="product-price">₹${(item.price * (item.quantity || 1)).toFixed(2)}</span>
-                </div>
-            `;
-            orderSummaryDetails.innerHTML += itemHtml;
-            total += item.price * (item.quantity || 1);
-        });
+        itemsToRender = userCart;
     } else {
         orderSummaryDetails.innerHTML = '<p>No items in order.</p>';
+        orderTotalAmount.textContent = `₹0.00`;
+        return;
     }
+
+    itemsToRender.forEach(item => {
+        const itemPrice = item.price * (item.quantity || 1);
+        total += itemPrice;
+        const itemHtml = `
+            <div class="product-item">
+                <img src="${item.imageUrl}" alt="${item.name}">
+                <div class="product-info">
+                    <p class="product-name">${item.name}</p>
+                    <p>Quantity: ${item.quantity || 1}</p>
+                </div>
+                <span class="product-price">₹${itemPrice.toFixed(2)}</span>
+            </div>
+        `;
+        orderSummaryDetails.innerHTML += itemHtml;
+    });
 
     orderTotalAmount.textContent = `₹${total.toFixed(2)}`;
 }
 
-// Payment method selection handler
-paymentMethodsDiv.addEventListener('change', () => {
-    const selectedMethod = paymentMethodsDiv.querySelector('input[name="payment_method"]:checked');
-    if (selectedMethod && deliveryAddressForm.checkValidity()) { // Check form validity too
-        placeOrderButton.classList.remove('hidden');
-        placeOrderButton.disabled = false;
-        paymentErrorDisplay.textContent = ''; // Clear any previous payment errors
+
+// --- Address Form Validation ---
+function validateAddressForm() {
+    let isValid = true;
+    const phoneRegex = /^[0-9]{10}$/;
+    const pincodeRegex = /^[0-9]{6}$/;
+
+    // Full Name
+    if (deliveryFullnameInput.value.trim() === '') {
+        errorFullname.textContent = 'Full Name is required.';
+        deliveryFullnameInput.classList.add('invalid');
+        isValid = false;
     } else {
-        placeOrderButton.classList.add('hidden');
+        errorFullname.textContent = '';
+        deliveryFullnameInput.classList.remove('invalid');
+    }
+
+    // Phone Number
+    if (!phoneRegex.test(deliveryPhoneInput.value.trim())) {
+        errorPhone.textContent = 'Please enter a valid 10-digit phone number.';
+        deliveryPhoneInput.classList.add('invalid');
+        isValid = false;
+    } else {
+        errorPhone.textContent = '';
+        deliveryPhoneInput.classList.remove('invalid');
+    }
+
+    // Address Line 1
+    if (deliveryAddress1Input.value.trim() === '') {
+        errorAddress1.textContent = 'Address Line 1 is required.';
+        deliveryAddress1Input.classList.add('invalid');
+        isValid = false;
+    } else {
+        errorAddress1.textContent = '';
+        deliveryAddress1Input.classList.remove('invalid');
+    }
+
+    // City
+    if (deliveryCityInput.value.trim() === '') {
+        errorCity.textContent = 'City is required.';
+        deliveryCityInput.classList.add('invalid');
+        isValid = false;
+    } else {
+        errorCity.textContent = '';
+        deliveryCityInput.classList.remove('invalid');
+    }
+
+    // State
+    if (deliveryStateInput.value.trim() === '') {
+        errorState.textContent = 'State is required.';
+        deliveryStateInput.classList.add('invalid');
+        isValid = false;
+    } else {
+        errorState.textContent = '';
+        deliveryStateInput.classList.remove('invalid');
+    }
+
+    // Pincode
+    if (!pincodeRegex.test(deliveryPincodeInput.value.trim())) {
+        errorPincode.textContent = 'Please enter a valid 6-digit pincode.';
+        deliveryPincodeInput.classList.add('invalid');
+        isValid = false;
+    } else {
+        errorPincode.textContent = '';
+        deliveryPincodeInput.classList.remove('invalid');
+    }
+
+    return isValid;
+}
+
+function clearAddressFormErrors() {
+    errorFullname.textContent = '';
+    errorPhone.textContent = '';
+    errorAddress1.textContent = '';
+    errorCity.textContent = '';
+    errorState.textContent = '';
+    errorPincode.textContent = '';
+    deliveryAddressForm.querySelectorAll('input').forEach(input => input.classList.remove('invalid'));
+}
+
+// Update "Place Your Order" button state based on payment and form validity
+function updatePlaceOrderButtonState() {
+    const selectedPaymentMethod = paymentMethodsDiv.querySelector('input[name="payment_method"]:checked');
+    const isAddressFormValid = deliveryAddressForm.checkValidity(); // Browser's built-in validation
+    
+    // Add custom validation check
+    const isCustomAddressValid = validateAddressForm(); // Our custom validation
+
+    if (selectedPaymentMethod && isCustomAddressValid) { // Use our custom validation result
+        placeOrderButton.disabled = false;
+        paymentErrorMessage.textContent = ''; // Clear payment error if valid
+    } else {
         placeOrderButton.disabled = true;
     }
+}
+
+// Attach input listeners for real-time validation and button state update
+deliveryAddressForm.addEventListener('input', () => {
+    validateAddressForm(); // Validate on every input change
+    updatePlaceOrderButtonState();
 });
 
-// Address form input change listener for button visibility
-deliveryAddressForm.addEventListener('input', () => {
-    const selectedMethod = paymentMethodsDiv.querySelector('input[name="payment_method"]:checked');
-    if (selectedMethod && deliveryAddressForm.checkValidity()) {
-        placeOrderButton.classList.remove('hidden');
-        placeOrderButton.disabled = false;
-        paymentErrorDisplay.textContent = '';
-    } else {
-        placeOrderButton.classList.add('hidden');
-        placeOrderButton.disabled = true;
-    }
+// Payment method selection handler
+paymentMethodsDiv.addEventListener('change', () => {
+    paymentErrorMessage.textContent = ''; // Clear error on new selection
+    updatePlaceOrderButtonState();
 });
 
 placeOrderButton.addEventListener('click', async () => {
-    // Client-side validation for address form
-    if (!deliveryAddressForm.checkValidity()) {
-        deliveryAddressForm.reportValidity(); // Show browser's validation messages
+    // Re-validate just before placing order
+    if (!validateAddressForm()) {
+        paymentErrorMessage.textContent = 'Please fill out all mandatory address fields correctly.';
         return;
     }
 
     const selectedPaymentMethod = paymentMethodsDiv.querySelector('input[name="payment_method"]:checked');
     if (!selectedPaymentMethod) {
-        paymentErrorDisplay.textContent = 'Please select a payment method.';
+        paymentErrorMessage.textContent = 'Please select a payment method.';
         return;
     }
 
     // All checks pass, proceed with order placement
     try {
         const orderId = `RAJU-${Date.now()}`; // Simple unique ID
-        const orderData = {
-            orderId: orderId,
-            userId: currentUser.uid,
-            products: currentCheckoutProduct ? [{ // If it's a direct buy now
+        
+        let productsInOrder = [];
+        if (currentCheckoutProduct) {
+            productsInOrder.push({ // If it's a direct buy now
                 id: currentCheckoutProduct.id,
                 name: currentCheckoutProduct.name,
                 imageUrl: currentCheckoutProduct.imageUrl,
                 price: currentCheckoutProduct.price,
                 quantity: 1
-            }] : userCart, // Otherwise, if cart is implemented
-            totalAmount: parseFloat(orderTotalAmount.textContent.replace('₹', '')),
+            });
+        } else {
+            productsInOrder = userCart; // Otherwise, take items from cart
+        }
+
+        const totalAmountValue = parseFloat(orderTotalAmount.textContent.replace('₹', ''));
+
+        const orderData = {
+            orderId: orderId,
+            userId: currentUser.uid,
+            products: productsInOrder,
+            totalAmount: totalAmountValue,
             deliveryAddress: {
                 fullName: deliveryFullnameInput.value.trim(),
                 phone: deliveryPhoneInput.value.trim(),
                 address1: deliveryAddress1Input.value.trim(),
-                address2: deliveryAddress2Input.value.trim(),
+                address2: deliveryAddress2Input.value.trim(), // Optional field
                 city: deliveryCityInput.value.trim(),
                 state: deliveryStateInput.value.trim(),
                 pincode: deliveryPincodeInput.value.trim()
@@ -489,16 +699,18 @@ placeOrderButton.addEventListener('click', async () => {
         await setDoc(doc(db, 'users', currentUser.uid, 'orders', orderId), orderData);
         console.log("Order placed successfully:", orderData);
 
+        // Clear cart if this was a cart checkout
+        if (!currentCheckoutProduct) { // Only clear cart if it wasn't a direct buy now
+            userCart = [];
+            await syncCartToFirestore(); // Ensure Firestore cart is also cleared
+        }
+
         // Hide checkout layout and show confirmation
         document.querySelector('.checkout-layout').classList.add('hidden');
         orderConfirmationMessage.classList.remove('hidden');
         confirmedOrderIdSpan.textContent = orderId;
 
-        // Clear cart if this was a cart checkout (future expansion)
-        userCart = [];
-        syncCartToFirestore();
-
-        currentCheckoutProduct = null; // Clear bought product
+        currentCheckoutProduct = null; // Reset for next order
         
     } catch (error) {
         console.error("Error placing order:", error);
@@ -635,6 +847,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentCheckoutProduct = null; // Clear any product being bought
     });
     closeMyOrdersModalBtn.addEventListener('click', () => myOrdersModal.classList.add('hidden'));
+    closeCartModalBtn.addEventListener('click', () => cartModal.classList.add('hidden'));
+    closeWishlistModalBtn.addEventListener('click', () => wishlistModal.classList.add('hidden'));
 
     // --- Header Nav Links ---
     const signoutLink = document.getElementById('signout-link');
@@ -656,4 +870,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
         showMyOrdersModal();
     });
+
+    cartIconHeader.addEventListener('click', (e) => {
+        e.preventDefault();
+        showCartModal();
+    });
+
+    wishlistIconHeader.addEventListener('click', (e) => {
+        e.preventDefault();
+        showWishlistModal();
+    });
+
+    proceedToCheckoutBtn.addEventListener('click', () => {
+        // Clear currentCheckoutProduct as we are checking out the entire cart
+        currentCheckoutProduct = null; 
+        showCheckoutModal();
+    });
+
+    // Initial state for place order button (disabled)
+    updatePlaceOrderButtonState();
 });

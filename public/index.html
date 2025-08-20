@@ -8,68 +8,37 @@
 </head>
 <body class="bg-gray-50">
 
-    <!-- Order Summary / Checkout Modal (now a full-page overlay) -->
-    <div id="checkout-modal" class="modal hidden">
+    <!-- Cart Modal -->
+    <div id="cart-modal" class="modal hidden">
         <div class="modal-outer-wrapper">
-            <div class="checkout-content">
-                <div class="checkout-header">
-                    <h2>Complete Your Order</h2>
-                    <button id="close-checkout-modal" class="modal-close-btn">✕</button>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Your Cart</h2>
+                    <button id="close-cart-modal" class="modal-close-btn">✕</button>
                 </div>
-
-                <div class="checkout-layout">
-                    <div class="order-summary-section">
-                        <h3>Order Summary</h3>
-                        <div id="order-summary-details">
-                            <!-- Selected product details will be dynamically loaded here -->
-                        </div>
-                        <div class="order-total">
-                            <strong>Total:</strong> <span id="order-total-amount">₹0.00</span>
-                        </div>
-                    </div>
-
-                    <div class="delivery-payment-section">
-                        <h3>Delivery Address</h3>
-                        <form id="delivery-address-form">
-                            <input type="text" id="delivery-fullname" placeholder="Full Name" required>
-                            <input type="tel" id="delivery-phone" placeholder="Phone Number (10 digits)" pattern="[0-9]{10}" required title="Please enter a 10-digit phone number">
-                            <input type="text" id="delivery-address1" placeholder="Address Line 1" required>
-                            <input type="text" id="delivery-address2" placeholder="Address Line 2 (Optional)">
-                            <input type="text" id="delivery-city" placeholder="City" required>
-                            <input type="text" id="delivery-state" placeholder="State" required>
-                            <input type="text" id="delivery-pincode" placeholder="Pincode (6 digits)" pattern="[0-9]{6}" required title="Please enter a 6-digit pincode">
-                        </form>
-
-                        <h3>Payment Method</h3>
-                        <div id="payment-methods" class="space-y-2">
-                            <label class="payment-option">
-                                <input type="radio" name="payment_method" value="COD" required>
-                                Cash On Delivery (COD)
-                            </label>
-                            <label class="payment-option">
-                                <input type="radio" name="payment_method" value="UPI">
-                                UPI Payment
-                            </label>
-                            <label class="payment-option">
-                                <input type="radio" name="payment_method" value="Card">
-                                Credit/Debit Card
-                            </label>
-                            <label class="payment-option">
-                                <input type="radio" name="payment_method" value="NetBanking">
-                                Net Banking
-                            </label>
-                        </div>
-                        <p class="form-error" id="payment-error"></p>
-
-                        <button id="place-order-button" class="modal-btn primary-modal-btn hidden" disabled>Place Your Order</button>
-                    </div>
+                <div id="cart-items-list">
+                    <!-- Cart items will be dynamically loaded here -->
+                    <p id="empty-cart-message">Your cart is empty.</p>
                 </div>
+                <div id="cart-total-summary" class="cart-total hidden">
+                    <strong>Cart Total:</strong> <span id="cart-total-amount">₹0.00</span>
+                </div>
+                <button id="proceed-to-checkout-btn" class="modal-btn primary-modal-btn hidden">Proceed to Checkout</button>
+            </div>
+        </div>
+    </div>
 
-                <div id="order-confirmation-message" class="order-message hidden">
-                    <h3>Your order has been placed!</h3>
-                    <p>Order ID: <span id="confirmed-order-id"></span></p>
-                    <p>Thank you for shopping with RajuKart!</p>
-                    <button id="back-to-home-button" class="modal-btn primary-modal-btn">Back to Home</button>
+    <!-- Wishlist Modal -->
+    <div id="wishlist-modal" class="modal hidden">
+        <div class="modal-outer-wrapper">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Your Wishlist</h2>
+                    <button id="close-wishlist-modal" class="modal-close-btn">✕</button>
+                </div>
+                <div id="wishlist-items-list">
+                    <!-- Wishlist items will be dynamically loaded here -->
+                    <p id="empty-wishlist-message">Your wishlist is empty.</p>
                 </div>
             </div>
         </div>
@@ -91,6 +60,102 @@
         </div>
     </div>
 
+    <!-- Order Summary / Checkout Modal (now a full-page overlay) -->
+    <div id="checkout-modal" class="modal hidden">
+        <div class="modal-outer-wrapper">
+            <div class="checkout-content">
+                <div class="checkout-header">
+                    <h2>Complete Your Order</h2>
+                    <button id="close-checkout-modal" class="modal-close-btn">✕</button>
+                </div>
+
+                <div class="checkout-layout">
+                    <!-- Left Column: Order Summary & Payment -->
+                    <div class="checkout-column">
+                        <h3>Order Summary</h3>
+                        <div id="order-summary-details">
+                            <!-- Selected product details will be dynamically loaded here -->
+                        </div>
+                        <div class="order-total">
+                            <strong>Total:</strong> <span id="order-total-amount">₹0.00</span>
+                        </div>
+
+                        <h3>Payment Method</h3>
+                        <div id="payment-methods" class="space-y-2">
+                            <label class="payment-option">
+                                <input type="radio" name="payment_method" value="COD" required>
+                                Cash On Delivery (COD)
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="payment_method" value="UPI">
+                                UPI Payment
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="payment_method" value="Card">
+                                Credit/Debit Card
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="payment_method" value="NetBanking">
+                                Net Banking
+                            </label>
+                        </div>
+                        <p class="form-error" id="payment-error-message"></p>
+
+                        <button id="place-order-button" class="modal-btn turquoise-btn" disabled>Place Your Order</button>
+                    </div>
+
+                    <!-- Right Column: Delivery Address -->
+                    <div class="checkout-column">
+                        <h3>Delivery Address</h3>
+                        <form id="delivery-address-form">
+                            <div class="form-group">
+                                <label for="delivery-fullname" class="block">Full Name</label>
+                                <input type="text" id="delivery-fullname" placeholder="Full Name" required>
+                                <span class="form-error" id="error-fullname"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="delivery-phone" class="block">Phone Number</label>
+                                <input type="tel" id="delivery-phone" placeholder="Phone Number (10 digits)" pattern="[0-9]{10}" required>
+                                <span class="form-error" id="error-phone"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="delivery-address1" class="block">Address Line 1</label>
+                                <input type="text" id="delivery-address1" placeholder="Address Line 1" required>
+                                <span class="form-error" id="error-address1"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="delivery-address2" class="block">Address Line 2 (Optional)</label>
+                                <input type="text" id="delivery-address2" placeholder="Address Line 2">
+                                <span class="form-error" id="error-address2"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="delivery-city" class="block">City</label>
+                                <input type="text" id="delivery-city" placeholder="City" required>
+                                <span class="form-error" id="error-city"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="delivery-state" class="block">State</label>
+                                <input type="text" id="delivery-state" placeholder="State" required>
+                                <span class="form-error" id="error-state"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="delivery-pincode" class="block">Pincode</label>
+                                <input type="text" id="delivery-pincode" placeholder="Pincode (6 digits)" pattern="[0-9]{6}" required>
+                                <span class="form-error" id="error-pincode"></span>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="order-confirmation-message" class="order-message hidden">
+                    <h3>Your order has been placed!</h3>
+                    <p>Order ID: <span id="confirmed-order-id"></span></p>
+                    <p>Thank you for shopping with RajuKart!</p>
+                    <button id="back-to-home-button" class="modal-btn primary-modal-btn">Back to Home</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Main Site Content Starts Here -->
     <header>
@@ -105,9 +170,10 @@
                     <span class="icon">&#x2764;</span>
                     <span class="icon-text">Wishlist</span>
                 </div>
-                <div class="icon-item">
+                <div class="icon-item" id="cart-icon-header">
                     <span class="icon">&#x1F6D2;</span>
                     <span class="icon-text">Cart</span>
+                    <span class="cart-count" id="cart-count">0</span>
                 </div>
                 <div class="icon-item">
                     <span class="icon">&#x1F69B;</span>

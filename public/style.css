@@ -9,8 +9,6 @@
     --border-color: #ddd;
     --shadow-color: rgba(0,0,0,0.1);
     --error-color: #d9534f; /* Red for error messages */
-
-    /* Educational Project Notice Colors */
     --educational-bg: #fffbe6; /* Light yellow */
     --educational-border: #ffe58f; /* Darker yellow border */
     --educational-text: #614d00; /* Dark yellow text */
@@ -90,7 +88,7 @@ header {
     flex-direction: column;
     align-items: center;
     cursor: pointer;
-    position: relative; /* For profile dropdown */
+    position: relative; /* For dropdowns and badges */
 }
 
 .icon-item .icon {
@@ -109,6 +107,22 @@ header {
     color: var(--dark-color); /* Change color on hover */
     transition: color 0.3s ease;
 }
+
+/* Cart Count Badge */
+.cart-count {
+    position: absolute;
+    top: -5px;
+    right: -10px;
+    background-color: #f44336; /* Red badge */
+    color: var(--white-color);
+    border-radius: 50%;
+    padding: 2px 7px;
+    font-size: 0.7em;
+    font-weight: bold;
+    min-width: 15px;
+    text-align: center;
+}
+
 
 /* Profile Dropdown */
 .profile-dropdown-content {
@@ -248,6 +262,9 @@ h2 {
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Pushes content and buttons apart */
 }
 
 .product-card:hover {
@@ -279,12 +296,13 @@ h2 {
     margin: 5px 0 15px;
 }
 
-/* New: Product action buttons (Add to Cart, Wishlist, Buy Now) */
+/* Product action buttons (Add to Cart, Wishlist, Buy Now) */
 .product-card .product-actions {
     display: flex;
     justify-content: center;
     gap: 10px;
-    margin-top: 15px;
+    margin-top: auto; /* Pushes action buttons to the bottom of the card */
+    flex-wrap: wrap; /* Allow buttons to wrap on smaller product cards */
 }
 
 .product-card button {
@@ -352,7 +370,7 @@ footer {
     font-size: 0.9em;
 }
 
-/* --- General Modal Styling (for checkout and my orders) --- */
+/* --- General Modal Styling (for cart, wishlist, my orders, and checkout) --- */
 .modal {
     position: fixed; /* Always stay in place */
     inset: 0; /* Top, right, bottom, left to 0 - covers entire viewport */
@@ -376,7 +394,7 @@ footer {
     box-sizing: border-box; /* Include padding in dimensions */
 }
 
-/* Generic Modal Content Box (for my orders) */
+/* Generic Modal Content Box (for cart, wishlist, my orders) */
 .modal-content {
     background-color: var(--white-color);
     padding: 30px;
@@ -384,7 +402,7 @@ footer {
     box-shadow: 0 5px 15px var(--shadow-color);
     width: 90%; /* Responsive width */
     max-width: 600px; /* Default for simple modals like My Orders */
-    text-align: center;
+    text-align: center; /* Center text within the modal */
     position: relative;
     box-sizing: border-box;
 }
@@ -418,6 +436,87 @@ footer {
     color: #555;
 }
 
+/* --- Cart & Wishlist Modal Specifics --- */
+#cart-items-list, #wishlist-items-list {
+    text-align: left; /* Align text within list items */
+    margin-bottom: 20px;
+}
+
+#empty-cart-message, #empty-wishlist-message {
+    text-align: center;
+    color: #777;
+    font-style: italic;
+    padding: 20px;
+}
+
+.cart-item, .wishlist-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px dashed var(--border-color);
+}
+.cart-item:last-child, .wishlist-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+.cart-item img, .wishlist-item img {
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
+    margin-right: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+}
+.cart-item-info, .wishlist-item-info {
+    flex-grow: 1;
+}
+.cart-item-info p, .wishlist-item-info p {
+    margin: 0;
+    font-size: 0.95em;
+    color: #555;
+}
+.cart-item-info .item-name, .wishlist-item-info .item-name {
+    font-weight: bold;
+    color: var(--text-color);
+    font-size: 1.1em;
+}
+.cart-item-price, .wishlist-item-price {
+    font-weight: bold;
+    color: var(--primary-dark-color);
+    white-space: nowrap; /* Prevent price from wrapping */
+}
+.cart-item .remove-btn, .wishlist-item .remove-btn {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.85em;
+    margin-left: 15px;
+    transition: background-color 0.2s ease;
+}
+.cart-item .remove-btn:hover, .wishlist-item .remove-btn:hover {
+    background-color: #e53935;
+}
+
+.cart-total {
+    text-align: right;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: var(--dark-color);
+    padding-top: 15px;
+    border-top: 2px solid var(--primary-color);
+    margin-top: 20px;
+}
+#proceed-to-checkout-btn {
+    margin-top: 25px;
+    display: block;
+    width: 100%;
+}
+
+
 /* --- Checkout Modal Specific Styles --- */
 .checkout-content {
     background-color: var(--white-color);
@@ -437,14 +536,12 @@ footer {
     margin-top: 20px;
 }
 
-.order-summary-section,
-.delivery-payment-section {
+.checkout-column {
     flex: 1; /* Flex-grow for equal distribution */
     min-width: 300px; /* Minimum width before wrapping */
 }
 
-.order-summary-section h3,
-.delivery-payment-section h3 {
+.checkout-column h3 {
     color: var(--primary-color);
     font-size: 1.5em;
     margin-bottom: 15px;
@@ -507,12 +604,24 @@ footer {
     margin-bottom: 25px;
 }
 
+.form-group {
+    margin-bottom: 15px; /* Spacing for each group */
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+    color: #555;
+}
+
 #delivery-address-form input {
     width: 100%;
     padding: 10px;
     border: 1px solid var(--border-color);
     border-radius: 5px;
     font-size: 0.9em;
+    box-sizing: border-box; /* Include padding in width */
 }
 
 #delivery-address-form input:focus {
@@ -520,8 +629,14 @@ footer {
     box-shadow: 0 0 0 2px rgba(64, 224, 208, 0.3);
 }
 
+#delivery-address-form input.invalid {
+    border-color: var(--error-color);
+}
+
+
 /* Payment Methods */
 #payment-methods {
+    margin-top: 15px; /* Spacing above payment section */
     margin-bottom: 25px;
 }
 
@@ -550,11 +665,26 @@ footer {
 
 /* Place Order Button */
 #place-order-button {
-    width: auto;
+    width: 100%; /* Full width in its column */
     padding: 12px 30px;
-    margin-left: auto; /* Push to right */
-    margin-right: auto; /* Push to left, effectively centering */
-    display: block; /* Make it a block element to respect margin auto */
+    /* Removed margin-left/right auto, as it's now full width */
+    display: block;
+    background-color: var(--primary-color); /* Turquoise */
+    color: var(--white-color);
+    border-radius: 5px;
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease, opacity 0.3s ease;
+}
+
+#place-order-button:hover {
+    background-color: var(--primary-dark-color);
+}
+#place-order-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+    opacity: 0.7;
 }
 
 /* Order Confirmation Message */
@@ -584,10 +714,33 @@ footer {
     margin-top: 20px;
     width: auto;
     max-width: 200px;
+    display: block; /* For centering with auto margins */
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* --- My Orders Modal Specific Styles --- */
-#orders-list .order-item {
+#orders-list {
+    max-height: 400px; /* Limit height and make scrollable */
+    overflow-y: auto;
+    padding-right: 10px; /* Space for scrollbar */
+}
+#orders-list::-webkit-scrollbar {
+  width: 8px;
+}
+#orders-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+#orders-list::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 4px;
+}
+#orders-list::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-dark-color);
+}
+
+.order-item {
     background-color: var(--light-color);
     border: 1px solid var(--border-color);
     border-radius: 8px;
@@ -597,18 +750,18 @@ footer {
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
-#orders-list .order-item p {
+.order-item p {
     margin: 5px 0;
     font-size: 0.9em;
 }
 
-#orders-list .order-id {
+.order-item .order-id {
     font-weight: bold;
     color: var(--primary-color);
     font-size: 1.1em;
 }
 
-#orders-list .order-total-item {
+.order-item .order-total-item {
     font-weight: bold;
     color: var(--dark-color);
     text-align: right;
@@ -627,10 +780,11 @@ footer {
 /* --- Form Styling (General) --- */
 .form-error {
     color: var(--error-color); /* A red color for errors */
-    font-size: 0.9em;
+    font-size: 0.8em; /* Slightly smaller for inline errors */
     text-align: left;
-    margin-top: -10px;
-    margin-bottom: 5px;
+    margin-top: 3px; /* Space below input */
+    margin-bottom: 5px; /* Space before next input */
+    min-height: 1.2em; /* Reserve space to prevent layout shifts */
     display: block;
 }
 
@@ -681,13 +835,16 @@ footer {
     .checkout-layout {
         flex-direction: column; /* Stack columns */
     }
-    .order-summary-section,
-    .delivery-payment-section {
+    .checkout-column {
         min-width: unset; /* Remove min-width on small screens */
         width: 100%;
     }
     .checkout-content {
         padding: 20px;
+        max-width: unset; /* Allow it to use more width on smaller screens */
+    }
+    .modal-content {
+        max-width: 90%; /* Wider modal content for cart/wishlist */
     }
 }
 
