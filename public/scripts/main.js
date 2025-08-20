@@ -6,13 +6,13 @@ import { getFirestore, collection, getDocs, query, where, doc, runTransaction, s
 // Your web app's Firebase configuration
 // IMPORTANT: REPLACE WITH YOUR ACTUAL VALUES from Firebase Console -> Project Settings -> Your Apps (Web App)
 const firebaseConfig = {
-  apiKey: "AIzaSyBa7_mkNVlIHQgWYytgXy0sLqkfuS-rVK4",
-  authDomain: "rajukart-ae5ca.firebaseapp.com",
-  projectId: "rajukart-ae5ca",
-  storageBucket: "rajukart-ae5ca.firebasestorage.app",
-  messagingSenderId: "570218176052",
-  appId: "1:570218176052:web:ea421005352249c160b461",
-  measurementId: "G-PGTT4FEZEJ"
+  apiKey: "YOUR_API_KEY", // Make sure this is your actual key
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "rajukart-ae5ca", // This should already be correct
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID",
+  measurementId: "YOUR_MEASUREMENT_ID" // If you have Analytics enabled
 };
 
 // Initialize Firebase
@@ -298,7 +298,7 @@ loginForm.addEventListener('submit', async (e) => {
 
 // --- Auth State Change Listener ---
 onAuthStateChanged(auth, async (user) => {
-    console.log("onAuthStateChanged triggered. User:", user ? user.uid : "null (signed out)"); // IMPORTANT: Added debug log
+    console.log("onAuthStateChanged triggered. User:", user ? user.uid : "null (signed out)");
 
     if (user) {
         let displayId = 'User';
@@ -327,18 +327,18 @@ onAuthStateChanged(auth, async (user) => {
             console.log("[Auth State] User is permanent.");
             displayId = user.displayName || user.email;
             userStatusDiv.textContent = `Welcome, ${displayId}!`;
-            localStorage.removeItem('localGuestId'); // Clear guest ID for permanent users
+            localStorage.removeItem('localGuestId');
         }
         profileText.textContent = displayId;
-        hideAllModals(); // Always hide modals if a user is authenticated
+        hideAllModals();
         fetchAndDisplayProducts();
 
     } else {
-        console.log("[Auth State] No user authenticated. Showing initial modal."); // IMPORTANT: Added debug log
+        console.log("[Auth State] No user authenticated. Showing initial modal.");
         userStatusDiv.textContent = `You are signed out.`;
         profileText.textContent = 'Profile';
         localStorage.removeItem('localGuestId');
-        showAuthModal(); // Show the initial welcome modal if no user is authenticated
+        showAuthModal();
     }
 });
 
@@ -367,7 +367,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log("[Sign Out] Attempting to sign user out...");
                 await signOut(auth);
                 console.log('[Sign Out] User signed out successfully.');
-                // onAuthStateChanged will handle UI update and modal display
             } catch (error) {
                 console.error('[Sign Out] Error signing out:', error);
             }
@@ -378,8 +377,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const carouselTrack = document.getElementById('carousel-track');
     const carouselIndicatorsContainer = document.getElementById('carousel-indicators');
 
+    // Using placeholder images for now, update with your local paths if ready
     const offerImages = [
-        '/img/aug-month-offer.png',
+        '/img/aug-month-offer.png', // Example of local path
         '/img/freedom-offer.png',
         '/img/aug-elec.png',
         '/img/aug-apparel.png'
@@ -439,19 +439,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // --- Product Display Logic ---
+
+// Helper function to create a product card HTML
 function createProductCard(product) {
     const card = document.createElement('div');
     card.className = 'product-card';
     card.innerHTML = `
         <img src="${product.imageUrl}" alt="${product.name}">
         <h3>${product.name}</h3>
-        <p class="price">$${product.price ? product.price.toFixed(2) : 'N/A'}</p>
+        <p class="price">₹${product.price ? product.price.toFixed(2) : 'N/A'}</p>
         <button class="add-to-cart-btn" data-product-id="${product.product_id}" data-action="add-to-cart">Add to Cart</button>
         <button class="wishlist-btn" data-product-id="${product.product_id}" data-action="add-to-wishlist">&#x2764;</button>
     `;
     return card;
 }
 
+// Function to fetch and display products
 async function fetchAndDisplayProducts(category = 'all') {
     if (!allProductListDiv || !featuredProductListDiv) return;
 
@@ -470,6 +473,10 @@ async function fetchAndDisplayProducts(category = 'all') {
 
         const productSnapshot = await getDocs(q);
         const products = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // --- IMPORTANT DEBUG LOG ---
+        console.log("[Product Fetch] Raw products array from Firestore:", products);
+        // --- END DEBUG LOG ---
 
         allProductListDiv.innerHTML = '';
         featuredProductListDiv.innerHTML = '';
