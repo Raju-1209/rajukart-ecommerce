@@ -200,6 +200,8 @@ signupForm.addEventListener('submit', async (e) => {
         return;
     }
 
+    /*
+    // Temporarily commented out: Client-side username uniqueness check (insecure for production)
     try {
         console.log("[Sign Up] Checking username existence...");
         const usernameQuery = query(collection(db, 'users'), where('username', '==', username));
@@ -213,6 +215,7 @@ signupForm.addEventListener('submit', async (e) => {
         signupErrorDisplay.textContent = "Could not check username. Please try again.";
         return;
     }
+    */
 
     try {
         console.log("[Sign Up] Creating user with email and password...");

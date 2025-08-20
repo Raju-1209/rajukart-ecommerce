@@ -338,7 +338,7 @@ footer {
     align-items: center; /* Center content vertically */
     justify-content: center; /* Center content horizontally */
     min-height: 100vh; /* Ensure it takes full viewport height for centering */
-    width: 100%; /* IMPORTANT: Ensures this wrapper takes full width for horizontal centering */
+    width: 100%; /* Ensures this wrapper takes full width for horizontal centering */
     padding: 20px; /* Padding around the modal box */
     box-sizing: border-box; /* Include padding in dimensions */
 }
@@ -459,11 +459,14 @@ footer {
 }
 
 /* Form Styling */
-form { /* Removed .modal-content prefix for general form styling */
+form {
     display: flex;
     flex-direction: column;
     gap: 15px; /* Space between form fields */
     margin-top: 25px; /* Space above the form */
+    max-width: 300px; /* Constrain form width */
+    margin-left: auto; /* Center the form horizontally */
+    margin-right: auto; /* Center the form horizontally */
 }
 
 input[type="text"],
