@@ -296,7 +296,7 @@ h2 {
     margin: 5px 0 15px;
 }
 
-/* Product action buttons (Add to Cart, Wishlist, Buy Now) */
+/* New: Product action buttons (Add to Cart, Wishlist, Buy Now) */
 .product-card .product-actions {
     display: flex;
     justify-content: center;
@@ -663,14 +663,13 @@ footer {
     transform: scale(1.2); /* Larger radio button */
 }
 
-/* Place Order Button */
+/* Place Order Button (now turquoise) */
 #place-order-button {
     width: 100%; /* Full width in its column */
     padding: 12px 30px;
-    /* Removed margin-left/right auto, as it's now full width */
-    display: block;
     background-color: var(--primary-color); /* Turquoise */
     color: var(--white-color);
+    border: none; /* Ensure no default button border */
     border-radius: 5px;
     font-size: 1.1em;
     font-weight: bold;

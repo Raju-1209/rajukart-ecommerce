@@ -496,46 +496,8 @@ categoriesNav.addEventListener('click', (event) => {
 });
 
 // --- Checkout Flow ---
-function startCheckout(product = null) {
-    currentCheckoutProduct = product; // Can be null if starting from cart
-    showCheckoutModal();
-    renderOrderSummary();
-}
-
-function renderOrderSummary() {
-    orderSummaryDetails.innerHTML = '';
-    let total = 0;
-    let itemsToRender = [];
-
-    if (currentCheckoutProduct) {
-        itemsToRender.push({ ...currentCheckoutProduct, quantity: 1 });
-    } else if (userCart.length > 0) {
-        itemsToRender = userCart;
-    } else {
-        orderSummaryDetails.innerHTML = '<p>No items in order.</p>';
-        orderTotalAmount.textContent = `₹0.00`;
-        return;
-    }
-
-    itemsToRender.forEach(item => {
-        const itemPrice = item.price * (item.quantity || 1);
-        total += itemPrice;
-        const itemHtml = `
-            <div class="product-item">
-                <img src="${item.imageUrl}" alt="${item.name}">
-                <div class="product-info">
-                    <p class="product-name">${item.name}</p>
-                    <p>Quantity: ${item.quantity || 1}</p>
-                </div>
-                <span class="product-price">₹${itemPrice.toFixed(2)}</span>
-            </div>
-        `;
-        orderSummaryDetails.innerHTML += itemHtml;
-    });
-
-    orderTotalAmount.textContent = `₹${total.toFixed(2)}`;
-}
-
+// startCheckout function updated to use currentCheckoutProduct or userCart
+// renderOrderSummary function updated to use currentCheckoutProduct or userCart
 
 // --- Address Form Validation ---
 function validateAddressForm() {
@@ -619,24 +581,27 @@ function clearAddressFormErrors() {
 // Update "Place Your Order" button state based on payment and form validity
 function updatePlaceOrderButtonState() {
     const selectedPaymentMethod = paymentMethodsDiv.querySelector('input[name="payment_method"]:checked');
-    const isAddressFormValid = deliveryAddressForm.checkValidity(); // Browser's built-in validation
-    
-    // Add custom validation check
-    const isCustomAddressValid = validateAddressForm(); // Our custom validation
+    const isAddressFormValid = validateAddressForm(); // Our custom validation
 
-    if (selectedPaymentMethod && isCustomAddressValid) { // Use our custom validation result
+    if (selectedPaymentMethod && isAddressFormValid) {
         placeOrderButton.disabled = false;
-        paymentErrorMessage.textContent = ''; // Clear payment error if valid
+        paymentErrorMessage.textContent = ''; // Clear any payment error if valid
     } else {
         placeOrderButton.disabled = true;
     }
 }
 
 // Attach input listeners for real-time validation and button state update
-deliveryAddressForm.addEventListener('input', () => {
-    validateAddressForm(); // Validate on every input change
-    updatePlaceOrderButtonState();
+// Loop through all inputs in the form and attach event listener
+Array.from(deliveryAddressForm.elements).forEach(input => {
+    if (input.tagName === 'INPUT' || input.tagName === 'SELECT' || input.tagName === 'TEXTAREA') {
+        input.addEventListener('input', () => {
+            validateAddressForm(); // Validate on every input change
+            updatePlaceOrderButtonState();
+        });
+    }
 });
+
 
 // Payment method selection handler
 paymentMethodsDiv.addEventListener('change', () => {
@@ -784,10 +749,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const carouselIndicatorsContainer = document.getElementById('carousel-indicators');
 
     const offerImages = [
-        '/img/offer1.jpg',
-        '/img/offer2.png',
-        'https://via.placeholder.com/1200x300?text=Limited-Time+Offer',
-        'https://via.placeholder.com/1200x300?text=Free+Shipping+on+All+Orders'
+        '/img/aug-month-offer.png',
+        '/img/freedom-offer.png',
+        '/img/aug-elec.png',
+        '/img/aug-apparel.png'
     ];
 
     let currentIndex = 0;
