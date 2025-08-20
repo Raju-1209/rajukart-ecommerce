@@ -520,11 +520,13 @@ footer {
 /* --- Checkout Modal Specific Styles --- */
 .checkout-content {
     background-color: var(--white-color);
-    padding: 30px;
+    padding: 25px; /* Slightly reduced padding */
     border-radius: 10px;
     box-shadow: 0 5px 15px var(--shadow-color);
-    width: 95%; /* Wider for checkout */
-    max-width: 900px; /* Max width for checkout */
+    width: 95%; /* Responsive width */
+    max-width: 800px; /* Reduced max-width for smaller feel */
+    max-height: 90vh; /* Constrain height to viewport */
+    overflow-y: auto; /* Enable scrolling if content overflows height */
     box-sizing: border-box;
     text-align: left; /* Align content left */
 }
@@ -532,13 +534,13 @@ footer {
 .checkout-layout {
     display: flex;
     flex-wrap: wrap; /* Allows wrapping on smaller screens */
-    gap: 30px;
-    margin-top: 20px;
+    gap: 20px; /* Reduced gap */
+    margin-top: 15px; /* Reduced margin */
 }
 
 .checkout-column {
     flex: 1; /* Flex-grow for equal distribution */
-    min-width: 300px; /* Minimum width before wrapping */
+    min-width: 280px; /* Slightly reduced min-width */
 }
 
 .checkout-column h3 {
@@ -548,11 +550,32 @@ footer {
     text-align: left; /* Align headings left */
 }
 
+#order-summary-details {
+    max-height: 200px; /* Limit height for order details */
+    overflow-y: auto;
+    padding-right: 10px; /* Space for scrollbar */
+    margin-bottom: 15px;
+}
+#order-summary-details::-webkit-scrollbar {
+  width: 8px;
+}
+#order-summary-details::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+#order-summary-details::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 4px;
+}
+#order-summary-details::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-dark-color);
+}
+
 #order-summary-details .product-item {
     display: flex;
     align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 15px;
+    margin-bottom: 10px; /* Reduced margin */
+    padding-bottom: 10px; /* Reduced padding */
     border-bottom: 1px dashed var(--border-color);
 }
 
@@ -562,10 +585,10 @@ footer {
 }
 
 #order-summary-details .product-item img {
-    width: 60px;
-    height: 60px;
+    width: 50px; /* Smaller image */
+    height: 50px; /* Smaller image */
     object-fit: contain;
-    margin-right: 15px;
+    margin-right: 10px; /* Reduced margin */
     border: 1px solid var(--border-color);
     border-radius: 5px;
 }
@@ -576,51 +599,52 @@ footer {
 
 #order-summary-details .product-info p {
     margin: 0;
-    font-size: 0.9em;
+    font-size: 0.85em; /* Smaller font */
     color: #555;
 }
 
 #order-summary-details .product-info .product-name {
     font-weight: bold;
     color: var(--text-color);
-    font-size: 1em;
+    font-size: 0.95em; /* Smaller font */
 }
 
 #order-summary-details .product-price {
     font-weight: bold;
     color: var(--primary-dark-color);
+    font-size: 0.95em;
 }
 
 .order-total {
     text-align: right;
-    margin-top: 20px;
-    font-size: 1.3em;
+    margin-top: 15px; /* Reduced margin */
+    font-size: 1.2em; /* Slightly smaller */
     color: var(--dark-color);
 }
 
 /* Delivery Address Form */
 #delivery-address-form {
     gap: 10px; /* Closer spacing for form fields */
-    margin-bottom: 25px;
+    margin-bottom: 20px; /* Reduced margin */
 }
 
 .form-group {
-    margin-bottom: 15px; /* Spacing for each group */
+    margin-bottom: 10px; /* Reduced spacing for each group */
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 5px;
-    font-size: 0.9em;
+    margin-bottom: 3px; /* Reduced margin */
+    font-size: 0.85em;
     color: #555;
 }
 
 #delivery-address-form input {
     width: 100%;
-    padding: 10px;
+    padding: 8px 10px; /* Reduced padding */
     border: 1px solid var(--border-color);
     border-radius: 5px;
-    font-size: 0.9em;
+    font-size: 0.85em; /* Reduced font size */
     box-sizing: border-box; /* Include padding in width */
 }
 
@@ -637,7 +661,7 @@ footer {
 /* Payment Methods */
 #payment-methods {
     margin-top: 15px; /* Spacing above payment section */
-    margin-bottom: 25px;
+    margin-bottom: 20px; /* Reduced margin */
 }
 
 .payment-option {
@@ -645,12 +669,13 @@ footer {
     background-color: var(--light-color);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 10px;
+    padding: 12px; /* Reduced padding */
+    margin-bottom: 8px; /* Reduced margin */
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
+    font-size: 0.9em; /* Smaller font */
 }
 
 .payment-option:hover {
@@ -659,8 +684,8 @@ footer {
 }
 
 .payment-option input[type="radio"] {
-    margin-right: 10px;
-    transform: scale(1.2); /* Larger radio button */
+    margin-right: 8px; /* Reduced margin */
+    transform: scale(1.1); /* Slightly smaller radio button */
 }
 
 /* Place Order Button (now turquoise) */
