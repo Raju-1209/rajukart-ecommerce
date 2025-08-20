@@ -39,7 +39,7 @@ const signupButtonWelcome = document.getElementById('signup-button-welcome');
 
 // Login Form Elements
 const loginForm = document.getElementById('login-form');
-const loginUsernameEmailInput = document.getElementById('login-username-email');
+const loginUsernameEmailInput = document.getElementById('login-username-email'); // Now primarily for username
 const loginPasswordInput = document.getElementById('login-password');
 const loginErrorDisplay = document.getElementById('login-error');
 const closeLoginModalBtn = document.getElementById('close-login-modal');
@@ -48,7 +48,7 @@ const showSignupFromLoginBtn = document.getElementById('show-signup-from-login')
 // Sign Up Form Elements
 const signupForm = document.getElementById('signup-form');
 const signupFullnameInput = document.getElementById('signup-fullname');
-const signupEmailInput = document.getElementById('signup-email');
+// const signupEmailInput = document.getElementById('signup-email'); // No longer in HTML
 const signupUsernameInput = document.getElementById('signup-username');
 const signupPasswordInput = document.getElementById('signup-password');
 const signupErrorDisplay = document.getElementById('signup-error');
@@ -151,11 +151,8 @@ async function handleGuestSignIn() {
 }
 
 // --- Validation Functions ---
-function validateEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.com$/;
-    return emailRegex.test(email);
-}
-
+// Removed validateEmail as it's no longer directly used for user input
+// Password validation remains the same
 function validatePassword(password) {
     const minLength = 8;
     const hasUpperCase = /[A-Z]/.test(password);
@@ -166,10 +163,19 @@ function validatePassword(password) {
     return password.length >= minLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar;
 }
 
+// New username validation
 function validateUsername(username) {
-    const hasLetter = /[a-zA-Z]/.test(username);
-    const hasNumber = /[0-9]/.test(username);
-    return hasLetter && hasNumber && username.length > 0;
+    const usernameRegex = /^[a-z_.]+$/; // Only lowercase letters, underscore, full stop
+    const minLength = 3;
+    const maxLength = 25;
+
+    if (username.length < minLength || username.length > maxLength) {
+        return { isValid: false, message: `Username must be between ${minLength} and ${maxLength} characters.` };
+    }
+    if (!usernameRegex.test(username)) {
+        return { isValid: false, message: 'Username can only contain lowercase letters, underscores (_), and periods (.).' };
+    }
+    return { isValid: true, message: '' };
 }
 
 
@@ -179,31 +185,29 @@ signupForm.addEventListener('submit', async (e) => {
     signupErrorDisplay.textContent = '';
 
     const fullname = signupFullnameInput.value.trim();
-    const email = signupEmailInput.value.trim();
     const username = signupUsernameInput.value.trim();
     const password = signupPasswordInput.value;
 
-    if (!fullname || !email || !username || !password) {
+    // Client-side validation
+    if (!fullname || !username || !password) {
         signupErrorDisplay.textContent = 'All fields are required.';
         return;
     }
-    if (!validateEmail(email)) {
-        signupErrorDisplay.textContent = 'Invalid email format. Must contain "@" and end with ".com"';
+
+    const usernameValidation = validateUsername(username);
+    if (!usernameValidation.isValid) {
+        signupErrorDisplay.textContent = usernameValidation.message;
         return;
     }
-    if (!validateUsername(username)) {
-        signupErrorDisplay.textContent = 'Username must contain both letters and numbers.';
-        return;
-    }
+    
     if (!validatePassword(password)) {
         signupErrorDisplay.textContent = 'Password must be 8+ characters, with at least one uppercase, one lowercase, one number, and one special character.';
         return;
     }
 
-    /*
-    // Temporarily commented out: Client-side username uniqueness check (insecure for production)
+    // Client-side username uniqueness check (this will fail due to Firestore Rules until replaced by Cloud Function)
     try {
-        console.log("[Sign Up] Checking username existence...");
+        console.log("[Sign Up] Checking username existence (client-side - will likely fail due to Firestore Rules)....");
         const usernameQuery = query(collection(db, 'users'), where('username', '==', username));
         const usernameSnapshot = await getDocs(usernameQuery);
         if (!usernameSnapshot.empty) {
@@ -211,23 +215,26 @@ signupForm.addEventListener('submit', async (e) => {
             return;
         }
     } catch (error) {
-        console.error("[Sign Up] Error checking username existence:", error);
-        signupErrorDisplay.textContent = "Could not check username. Please try again.";
+        console.error("[Sign Up] Error checking username existence (as expected, Firestore Rules deny broad client queries):", error);
+        signupErrorDisplay.textContent = "Error checking username availability. (Try again later or contact support if issue persists).";
         return;
     }
-    */
+
+    // --- Construct internal email for Firebase Auth ---
+    const internalEmail = `${username}@temp.rajukart.com`; 
 
     try {
-        console.log("[Sign Up] Creating user with email and password...");
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        console.log(`[Sign Up] Creating user with internal email: ${internalEmail} and password...`);
+        // Use the internal email for Firebase Authentication
+        const userCredential = await createUserWithEmailAndPassword(auth, internalEmail, password);
         const user = userCredential.user;
 
         console.log("[Sign Up] Saving additional user details to Firestore...");
         await setDoc(doc(db, 'users', user.uid), {
             uid: user.uid,
             fullName: fullname,
-            username: username,
-            email: email,
+            username: username, // Store the actual username
+            email: internalEmail, // Store the internal email for reference/login
             createdAt: serverTimestamp(),
             lastLoginAt: serverTimestamp(),
             isGuest: false
@@ -243,7 +250,8 @@ signupForm.addEventListener('submit', async (e) => {
         console.error("[Sign Up] Sign Up failed:", error);
         let errorMessage = 'Sign Up failed. Please try again.';
         if (error.code === 'auth/email-already-in-use') {
-            errorMessage = 'This email is already in use. Please login or use a different email.';
+            // This error now means the internalEmail (and thus username) is already taken
+            errorMessage = 'This username is already taken (or there was an internal issue). Please choose another.';
         } else if (error.code === 'auth/weak-password') {
              errorMessage = 'Password is too weak. ' + error.message;
         }
@@ -257,28 +265,35 @@ loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     loginErrorDisplay.textContent = '';
 
-    const usernameOrEmail = loginUsernameEmailInput.value.trim();
+    const usernameOrPasswordInput = loginUsernameEmailInput.value.trim(); // This is now primarily username
     const password = loginPasswordInput.value;
 
-    if (!usernameOrEmail || !password) {
+    if (!usernameOrPasswordInput || !password) {
         loginErrorDisplay.textContent = 'Both fields are required.';
         return;
     }
 
     try {
-        let emailToLogin = usernameOrEmail;
+        let emailToLogin = usernameOrPasswordInput;
 
-        if (!validateEmail(usernameOrEmail)) {
-            console.log("[Login] Attempting username-based login. Checking Firestore for email...");
-            const usernameQuery = query(collection(db, 'users'), where('username', '==', usernameOrEmail));
+        // Check if the input LOOKS like an email. If not, assume it's a username.
+        const isEmailFormat = /^[^\s@]+@[^\s@]+\.[a-z]+$/.test(usernameOrPasswordInput); // More generic email regex for login
+        
+        if (!isEmailFormat) {
+            console.log("[Login] Input is not email format. Attempting username-based login. Checking Firestore for email...");
+            const usernameQuery = query(collection(db, 'users'), where('username', '==', usernameOrPasswordInput));
             const usernameSnapshot = await getDocs(usernameQuery);
             
             if (usernameSnapshot.empty) {
                 loginErrorDisplay.textContent = 'Invalid username or password.';
                 return;
             }
-            emailToLogin = usernameSnapshot.docs[0].data().email;
-            console.log(`[Login] Found email for username: ${emailToLogin}`);
+            emailToLogin = usernameSnapshot.docs[0].data().email; // Get the internal email
+            console.log(`[Login] Found internal email for username: ${emailToLogin}`);
+        } else {
+            console.log("[Login] Input looks like email. Attempting email-based login.");
+            // If it's an email format, we'll try to log in directly with it.
+            // Note: This might be a real email or a dummy email from another system.
         }
 
         console.log(`[Login] Signing in with email: ${emailToLogin}`);
@@ -328,7 +343,13 @@ onAuthStateChanged(auth, async (user) => {
             userStatusDiv.textContent = `Welcome, ${displayId}! (Guest)`;
         } else {
             console.log("[Auth State] User is permanent.");
-            displayId = user.displayName || user.email;
+            // For permanent users, display their username if available, else their full name or email
+            const userDocSnap = await getDoc(doc(db, 'users', user.uid));
+            if (userDocSnap.exists() && userDocSnap.data().username) {
+                displayId = userDocSnap.data().username;
+            } else {
+                displayId = user.displayName || user.email; // Fallback to displayName or email from Auth
+            }
             userStatusDiv.textContent = `Welcome, ${displayId}!`;
             localStorage.removeItem('localGuestId');
         }
@@ -380,9 +401,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const carouselTrack = document.getElementById('carousel-track');
     const carouselIndicatorsContainer = document.getElementById('carousel-indicators');
 
-    // Using placeholder images for now, update with your local paths if ready
     const offerImages = [
-        '/img/aug-month-offer.png', // Example of local path
+        '/img/aug-month-offer.png',
         '/img/freedom-offer.png',
         '/img/aug-elec.png',
         '/img/aug-apparel.png'
@@ -477,9 +497,7 @@ async function fetchAndDisplayProducts(category = 'all') {
         const productSnapshot = await getDocs(q);
         const products = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // --- IMPORTANT DEBUG LOG ---
         console.log("[Product Fetch] Raw products array from Firestore:", products);
-        // --- END DEBUG LOG ---
 
         allProductListDiv.innerHTML = '';
         featuredProductListDiv.innerHTML = '';
