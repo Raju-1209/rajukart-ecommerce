@@ -52,6 +52,9 @@
                     <h2>My Orders</h2>
                     <button id="close-my-orders-modal" class="modal-close-btn">✕</button>
                 </div>
+                <p id="order-cancellation-status" class="form-error hidden">
+                    <!-- Order cancellation status message appears here -->
+                </p>
                 <div id="orders-list">
                     <!-- Orders will be dynamically loaded here -->
                     <p id="no-orders-message">You have no past orders.</p>
@@ -59,6 +62,62 @@
             </div>
         </div>
     </div>
+
+    <!-- Track Order Modal -->
+    <div id="track-order-modal" class="modal hidden">
+        <div class="modal-outer-wrapper">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Track Your Order</h2>
+                    <button id="close-track-order-modal" class="modal-close-btn">✕</button>
+                </div>
+                <div class="form-group">
+                    <label for="track-order-id-input" class="block">Enter Order ID:</label>
+                    <input type="text" id="track-order-id-input" placeholder="e.g., RAJU-1678888888888" required>
+                    <span class="form-error" id="error-track-order-id"></span>
+                </div>
+                <button id="track-order-submit-btn" class="modal-btn primary-modal-btn">Track Order</button>
+                <div id="order-tracking-details" class="tracking-details hidden">
+                    <h3>Tracking Information</h3>
+                    <p><strong>Order ID:</strong> <span id="tracking-order-id"></span></p>
+                    <div class="tracking-milestones">
+                        <p><strong>Order Placed:</strong> <span id="tracking-placed-date"></span></p>
+                        <p><strong>Order Shipped:</strong> <span id="tracking-shipped-date"></span></p>
+                        <p><strong>Out for Delivery:</strong> <span id="tracking-delivery-date"></span></p>
+                    </div>
+                </div>
+                <p id="track-order-message" class="form-error"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancel Order Confirmation Modal -->
+    <div id="cancel-order-modal" class="modal hidden">
+        <div class="modal-outer-wrapper">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Cancel Order</h2>
+                    <button id="close-cancel-order-modal" class="modal-close-btn">✕</button>
+                </div>
+                <p>Are you sure you want to cancel order <strong id="cancel-order-id-display"></strong>?</p>
+                <div class="form-group">
+                    <label for="cancel-reason-select" class="block">Reason for cancellation:</label>
+                    <select id="cancel-reason-select" required>
+                        <option value="">Select a reason</option>
+                        <option value="Changed mind">Changed mind</option>
+                        <option value="Ordered by mistake">Ordered by mistake</option>
+                        <option value="Found better price">Found better price elsewhere</option>
+                        <option value="Long delivery time">Delivery time too long</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <span class="form-error" id="error-cancel-reason"></span>
+                </div>
+                <button id="confirm-cancel-order-btn" class="modal-btn gray-btn">Confirm Cancellation</button>
+                <p id="cancel-confirmation-message" class="order-message hidden"></p>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Order Summary / Checkout Modal (now a full-page overlay) -->
     <div id="checkout-modal" class="modal hidden">
@@ -175,7 +234,7 @@
                     <span class="icon-text">Cart</span>
                     <span class="cart-count" id="cart-count">0</span>
                 </div>
-                <div class="icon-item">
+                <div class="icon-item" id="track-order-icon-header">
                     <span class="icon">&#x1F69B;</span>
                     <span class="icon-text">Track Order</span>
                 </div>

@@ -1,3 +1,5 @@
+// --- CHUNK 1/11 START ---
+
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
@@ -25,6 +27,10 @@ let currentUser = null; // Stores the current Firebase Auth user object
 let userCart = [];      // Stores products in the user's cart (array of product objects with quantity)
 let userWishlist = [];  // Stores products in the user's wishlist (array of product objects)
 let currentProductForCheckout = null; // Stores the product selected via "Buy Now" button
+let productDataCache = []; // Cache for all products fetched from Firestore
+
+// --- CHUNK 1/11 END ---
+// --- CHUNK 2/11 START ---
 
 // --- UI Elements ---
 const userStatusDiv = document.getElementById('user-status');
@@ -36,6 +42,7 @@ const profileText = document.getElementById('profile-text'); // For updating pro
 // Header Icons
 const cartIconHeader = document.getElementById('cart-icon-header');
 const wishlistIconHeader = document.querySelector('.header-icons .icon-item:first-child'); // Target the first icon-item for wishlist
+const trackOrderIconHeader = document.getElementById('track-order-icon-header'); // New: Track Order header icon
 const cartCountBadge = document.getElementById('cart-count');
 
 // Modals
@@ -57,6 +64,31 @@ const closeMyOrdersModalBtn = document.getElementById('close-my-orders-modal');
 const myOrdersLinkHeader = document.getElementById('my-orders-link-header');
 const ordersListDiv = document.getElementById('orders-list');
 const noOrdersMessage = document.getElementById('no-orders-message');
+
+// Track Order Modal Elements
+const trackOrderModal = document.getElementById('track-order-modal'); // New: Track Order modal
+const closeTrackOrderModalBtn = document.getElementById('close-track-order-modal');
+const trackOrderIdInput = document.getElementById('track-order-id-input');
+const trackOrderSubmitBtn = document.getElementById('track-order-submit-btn');
+const orderTrackingDetailsDiv = document.getElementById('order-tracking-details');
+const trackingOrderIdSpan = document.getElementById('tracking-order-id');
+const trackingPlacedDateSpan = document.getElementById('tracking-placed-date');
+const trackingShippedDateSpan = document.getElementById('tracking-shipped-date');
+const trackingDeliveryDateSpan = document.getElementById('tracking-delivery-date');
+const trackOrderMessage = document.getElementById('track-order-message');
+const errorTrackOrderId = document.getElementById('error-track-order-id');
+
+// Cancel Order Modal Elements
+const cancelOrderModal = document.getElementById('cancel-order-modal'); // New: Cancel Order modal
+const closeCancelOrderModalBtn = document.getElementById('close-cancel-order-modal');
+const cancelOrderIdDisplay = document.getElementById('cancel-order-id-display');
+const cancelReasonSelect = document.getElementById('cancel-reason-select');
+const confirmCancelOrderBtn = document.getElementById('confirm-cancel-order-btn');
+const cancelConfirmationMessage = document.getElementById('cancel-confirmation-message');
+const errorCancelReason = document.getElementById('error-cancel-reason');
+
+// --- CHUNK 2/11 END ---
+// --- CHUNK 3/11 START ---
 
 // Checkout Modal Elements
 const checkoutModal = document.getElementById('checkout-modal');
@@ -93,6 +125,8 @@ function hideAllModals() {
     myOrdersModal.classList.add('hidden');
     cartModal.classList.add('hidden');
     wishlistModal.classList.add('hidden');
+    trackOrderModal.classList.add('hidden'); // New: Hide track order modal
+    cancelOrderModal.classList.add('hidden'); // New: Hide cancel order modal
 }
 
 function showCheckoutModal() {
@@ -114,6 +148,9 @@ function showMyOrdersModal() {
     fetchAndDisplayOrders();
 }
 
+// --- CHUNK 3/11 END ---
+// --- CHUNK 4/11 START ---
+
 function showCartModal() {
     hideAllModals();
     cartModal.classList.remove('hidden');
@@ -126,6 +163,32 @@ function showWishlistModal() {
     renderWishlistItems();
 }
 
+// New: Function to show Track Order Modal
+function showTrackOrderModal() {
+    hideAllModals();
+    trackOrderModal.classList.remove('hidden');
+    // Reset fields and messages
+    trackOrderIdInput.value = '';
+    trackOrderMessage.textContent = '';
+    errorTrackOrderId.textContent = '';
+    orderTrackingDetailsDiv.classList.add('hidden'); // Hide details initially
+}
+
+// New: Function to show Cancel Order Modal
+let orderToCancel = null; // Global variable to store the order being cancelled
+
+function showCancelOrderModal(orderId) {
+    hideAllModals();
+    cancelOrderModal.classList.remove('hidden');
+    cancelOrderIdDisplay.textContent = orderId;
+    cancelReasonSelect.value = ''; // Reset select
+    errorCancelReason.textContent = ''; // Clear error
+    cancelConfirmationMessage.classList.add('hidden'); // Hide confirmation
+    confirmCancelOrderBtn.disabled = false; // Enable button
+    
+    orderToCancel = orderId; // Store the order ID for cancellation
+}
+
 
 // --- Background Guest Authentication ---
 async function ensureAuthenticatedUser() {
@@ -134,6 +197,10 @@ async function ensureAuthenticatedUser() {
             if (user) {
                 currentUser = user; // Set global currentUser
                 console.log("[Auth] User is already authenticated. UID:", user.uid);
+
+// --- CHUNK 4/11 END ---
+// --- CHUNK 5/11 START ---
+
                 if (user.isAnonymous) {
                     let guestId = localStorage.getItem('localGuestId');
                     if (!guestId) {
@@ -241,10 +308,13 @@ async function loadUserSpecificData() {
     }
 }
 
+// --- CHUNK 5/11 END ---
+// --- CHUNK 6/11 START ---
+
 async function syncCartToFirestore() {
     if (!currentUser) return;
     const cartRef = collection(db, 'users', currentUser.uid, 'cart');
-    const batch = db.batch();
+    const batch = writeBatch(db); // Use writeBatch imported from Firestore
 
     // Remove items not in current userCart
     const existingCartSnapshot = await getDocs(cartRef);
@@ -275,7 +345,7 @@ async function syncCartToFirestore() {
 async function syncWishlistToFirestore() {
     if (!currentUser) return;
     const wishlistRef = collection(db, 'users', currentUser.uid, 'wishlist');
-    const batch = db.batch();
+    const batch = writeBatch(db); // Use writeBatch imported from Firestore
 
     // Remove items not in current userWishlist
     const existingWishlistSnapshot = await getDocs(wishlistRef);
@@ -334,6 +404,9 @@ function removeItemFromCart(productId) {
     updateCartCountBadge();
     renderCartItems();
 }
+
+// --- CHUNK 6/11 END ---
+// --- CHUNK 7/11 START ---
 
 function addToWishlist(product) {
     const existingItem = userWishlist.find(item => item.id === product.id);
@@ -449,28 +522,29 @@ async function fetchAndDisplayProducts(category = 'all') {
         }
 
         const productSnapshot = await getDocs(q);
-        const products = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Cache the product data
+        productDataCache = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        console.log("[Product Fetch] Raw products array from Firestore:", products);
+        console.log("[Product Fetch] Raw products array from Firestore:", productDataCache);
 
         allProductListDiv.innerHTML = '';
         featuredProductListDiv.innerHTML = '';
 
-        if (products.length === 0) {
+        if (productDataCache.length === 0) {
             allProductListDiv.innerHTML = `<p>No products found in ${category === 'all' ? 'any category' : category}.</p>`;
             featuredProductListDiv.innerHTML = `<p>No featured products available.</p>`;
             return;
         }
 
-        products.forEach(product => {
+        productDataCache.forEach(product => {
             allProductListDiv.appendChild(createProductCard(product));
         });
 
-        products.slice(0, 5).forEach(product => {
+        productDataCache.slice(0, 5).forEach(product => {
             featuredProductListDiv.appendChild(createProductCard(product));
         });
 
-        console.log(`Displayed ${products.length} products.`);
+        console.log(`Displayed ${productDataCache.length} products.`);
 
     } catch (error) {
         console.error("Error fetching products:", error);
@@ -525,6 +599,8 @@ function renderOrderSummary() {
     }
 
     itemsToRender.forEach(item => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'product-item';
         const itemPrice = item.price * (item.quantity || 1);
         total += itemPrice;
         const itemHtml = `
@@ -773,7 +849,16 @@ async function fetchAndDisplayOrders() {
                 <p>Payment Method: ${order.paymentMethod}</p>
                 <p>Delivery To: ${order.deliveryAddress.fullName}, ${order.deliveryAddress.address1}, ${order.deliveryAddress.city}</p>
                 <p class="order-total-item">Total: ${totalAmount}</p>
+                <button class="cancel-order-btn" data-order-id="${order.orderId}" ${order.orderStatus === 'Cancelled' ? 'disabled' : ''}>
+                    ${order.orderStatus === 'Cancelled' ? 'Order Cancelled' : 'Cancel Order'}
+                </button>
             `;
+            // Add event listener for the cancel button
+            if (order.orderStatus !== 'Cancelled') {
+                orderItemDiv.querySelector('.cancel-order-btn').addEventListener('click', (event) => {
+                    showCancelOrderModal(event.target.dataset.orderId);
+                });
+            }
             ordersListDiv.appendChild(orderItemDiv);
         });
 
@@ -784,6 +869,131 @@ async function fetchAndDisplayOrders() {
     }
 }
 
+// --- Order Tracking Logic ---
+trackOrderSubmitBtn.addEventListener('click', async () => {
+    const orderId = trackOrderIdInput.value.trim();
+    if (!orderId) {
+        errorTrackOrderId.textContent = 'Order ID cannot be empty.';
+        orderTrackingDetailsDiv.classList.add('hidden');
+        return;
+    } else {
+        errorTrackOrderId.textContent = '';
+    }
+
+    trackOrderMessage.textContent = 'Searching for order...';
+    orderTrackingDetailsDiv.classList.add('hidden');
+
+    try {
+        // Try to find the order in the current user's orders first
+        let orderDoc;
+        if (currentUser && currentUser.uid) {
+            orderDoc = await getDoc(doc(db, 'users', currentUser.uid, 'orders', orderId));
+        }
+
+        // If not found in user's orders, or no current user, simulate tracking
+        if (!orderDoc || !orderDoc.exists) {
+            console.log(`Order ${orderId} not found in current user's data. Simulating tracking...`);
+            // For a real app, this would involve a backend call or a separate public collection
+            // Here, we simulate based on the order ID format.
+            if (orderId.startsWith('RAJU-') && orderId.length === 19 && !isNaN(orderId.substring(5))) {
+                const orderTimestamp = parseInt(orderId.substring(5));
+                const placedDate = new Date(orderTimestamp);
+                
+                // Simulate Shipped and Delivery dates
+                // Add random days between 1 and 3 for shipping
+                const shippedDate = new new Date(placedDate.getTime() + (Math.floor(Math.random() * 3) + 1) * 24 * 60 * 60 * 1000);
+                // Add random days between 3 and 15 total for delivery from placed date
+                const deliveryDate = new Date(placedDate.getTime() + (Math.floor(Math.random() * 13) + 3) * 24 * 60 * 60 * 1000); // 3 to 15 days total
+
+                trackingOrderIdSpan.textContent = orderId;
+                trackingPlacedDateSpan.textContent = placedDate.toLocaleString();
+                trackingShippedDateSpan.textContent = shippedDate.toLocaleString();
+                trackingDeliveryDateSpan.textContent = deliveryDate.toLocaleString();
+
+                orderTrackingDetailsDiv.classList.remove('hidden');
+                trackOrderMessage.textContent = 'Order found and tracked!';
+            } else {
+                trackOrderMessage.textContent = 'Order not found. Please check the Order ID.';
+            }
+        } else {
+            // Order found in user's own data
+            const order = orderDoc.data();
+            const placedDate = order.createdAt.toDate(); // Convert Firestore Timestamp to Date
+
+            // For existing orders, if we don't have separate shipped/delivery fields,
+            // we can simulate them based on the placed date.
+            // In a real app, these would be stored in the order document as they happen.
+            const shippedDate = new Date(placedDate.getTime() + (Math.floor(Math.random() * 3) + 1) * 24 * 60 * 60 * 1000);
+            const deliveryDate = new Date(placedDate.getTime() + (Math.floor(Math.random() * 13) + 3) * 24 * 60 * 60 * 1000);
+            
+            trackingOrderIdSpan.textContent = order.orderId;
+            trackingPlacedDateSpan.textContent = placedDate.toLocaleString();
+            trackingShippedDateSpan.textContent = shippedDate.toLocaleString();
+            trackingDeliveryDateSpan.textContent = deliveryDate.toLocaleString();
+            
+            orderTrackingDetailsDiv.classList.remove('hidden');
+            trackOrderMessage.textContent = 'Order found and tracked!';
+        }
+
+    } catch (error) {
+        console.error("Error tracking order:", error);
+        trackOrderMessage.textContent = 'An error occurred while tracking the order. Please try again.';
+    }
+});
+
+// --- Order Cancellation Logic ---
+confirmCancelOrderBtn.addEventListener('click', async () => {
+    const reason = cancelReasonSelect.value;
+    if (!reason) {
+        errorCancelReason.textContent = 'Please select a reason for cancellation.';
+        return;
+    } else {
+        errorCancelReason.textContent = '';
+    }
+
+    if (!orderToCancel || !currentUser || !currentUser.uid) {
+        cancelConfirmationMessage.textContent = 'Error: Cannot process cancellation. Missing order or user information.';
+        cancelConfirmationMessage.classList.remove('hidden');
+        return;
+    }
+
+    try {
+        const orderRef = doc(db, 'users', currentUser.uid, 'orders', orderToCancel);
+        const orderSnap = await getDoc(orderRef);
+
+        if (!orderSnap.exists()) {
+            cancelConfirmationMessage.textContent = `Error: Order ${orderToCancel} not found.`;
+            cancelConfirmationMessage.classList.remove('hidden');
+            return;
+        }
+
+        const currentStatus = orderSnap.data().orderStatus;
+        if (currentStatus === 'Cancelled') {
+            cancelConfirmationMessage.textContent = `Order ${orderToCancel} is already cancelled.`;
+            cancelConfirmationMessage.classList.remove('hidden');
+            return;
+        }
+
+        // Update order status to 'Cancelled' and store reason
+        await setDoc(orderRef, {
+            orderStatus: 'Cancelled',
+            cancellationReason: reason,
+            cancelledAt: serverTimestamp()
+        }, { merge: true });
+
+        cancelConfirmationMessage.textContent = `Your order: ${orderToCancel} has been cancelled!`;
+        cancelConfirmationMessage.classList.remove('hidden');
+        confirmCancelOrderBtn.disabled = true; // Disable button after successful cancellation
+        
+        // Refresh My Orders list to reflect the change
+        fetchAndDisplayOrders();
+
+    } catch (error) {
+        console.error("Error cancelling order:", error);
+        cancelConfirmationMessage.textContent = `Failed to cancel order ${orderToCancel}. Please try again.`;
+        cancelConfirmationMessage.classList.remove('hidden');
+    }
+});
 
 // --- Initial Setup & Event Listeners ---
 document.addEventListener('DOMContentLoaded', async () => {
@@ -794,10 +1004,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const carouselIndicatorsContainer = document.getElementById('carousel-indicators');
 
     const offerImages = [
-        '/img/offer1.jpg',
-        '/img/offer2.png',
-        'https://via.placeholder.com/1200x300?text=Limited-Time+Offer',
-        'https://via.placeholder.com/1200x300?text=Free+Shipping+on+All+Orders'
+        '/img/aug-month-offer.png',
+        '/img/freedom-offer.png',
+        '/img/aug-elec.png',
+        '/img/aug-apparel.png'
     ];
 
     let currentIndex = 0;
@@ -859,6 +1069,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     closeMyOrdersModalBtn.addEventListener('click', () => myOrdersModal.classList.add('hidden'));
     closeCartModalBtn.addEventListener('click', () => cartModal.classList.add('hidden'));
     closeWishlistModalBtn.addEventListener('click', () => wishlistModal.classList.add('hidden'));
+    closeTrackOrderModalBtn.addEventListener('click', () => trackOrderModal.classList.add('hidden')); // New: Close Track Order
+    closeCancelOrderModalBtn.addEventListener('click', () => {
+        cancelOrderModal.classList.add('hidden');
+        orderToCancel = null; // Clear the stored order ID
+    });
+
 
     // --- Header Nav Links ---
     const signoutLink = document.getElementById('signout-link');
@@ -891,6 +1107,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         showWishlistModal();
     });
 
+    trackOrderIconHeader.addEventListener('click', (e) => {
+        e.preventDefault();
+        showTrackOrderModal(); // New: Show Track Order modal
+    });
+
     proceedToCheckoutBtn.addEventListener('click', () => {
         // Clear currentProductForCheckout as we are checking out the entire cart
         currentProductForCheckout = null; 
@@ -900,3 +1121,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initial state for place order button (disabled)
     updatePlaceOrderButtonState();
 });
+// --- CHUNK 7/11 END ---

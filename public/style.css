@@ -394,7 +394,7 @@ footer {
     box-sizing: border-box; /* Include padding in dimensions */
 }
 
-/* Generic Modal Content Box (for cart, wishlist, my orders) */
+/* Generic Modal Content Box (for cart, wishlist, my orders, track order, cancel order) */
 .modal-content {
     background-color: var(--white-color);
     padding: 30px;
@@ -629,7 +629,7 @@ footer {
 }
 
 .form-group {
-    margin-bottom: 10px; /* Reduced spacing for each group */
+    margin-bottom: 10px; /* Spacing for each group */
 }
 
 .form-group label {
@@ -639,7 +639,8 @@ footer {
     color: #555;
 }
 
-#delivery-address-form input {
+#delivery-address-form input,
+#delivery-address-form select { /* Added select for cancel reason */
     width: 100%;
     padding: 8px 10px; /* Reduced padding */
     border: 1px solid var(--border-color);
@@ -648,12 +649,14 @@ footer {
     box-sizing: border-box; /* Include padding in width */
 }
 
-#delivery-address-form input:focus {
+#delivery-address-form input:focus,
+#delivery-address-form select:focus {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 2px rgba(64, 224, 208, 0.3);
 }
 
-#delivery-address-form input.invalid {
+#delivery-address-form input.invalid,
+#delivery-address-form select.invalid {
     border-color: var(--error-color);
 }
 
@@ -793,6 +796,29 @@ footer {
     border-top: 1px dashed var(--border-color);
     padding-top: 10px;
 }
+.order-item .cancel-order-btn {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.85em;
+    margin-top: 10px;
+    transition: background-color 0.2s ease;
+    display: block; /* Make it a block button */
+    width: fit-content; /* Adjust width to content */
+    margin-left: auto; /* Push to right */
+}
+.order-item .cancel-order-btn:hover {
+    background-color: #e53935;
+}
+.order-item .cancelled-status {
+    color: #f44336;
+    font-weight: bold;
+    font-size: 0.9em;
+    text-align: right;
+}
 
 #no-orders-message {
     text-align: center;
@@ -801,7 +827,96 @@ footer {
     padding: 20px;
 }
 
+/* --- Track Order Modal Specific Styles --- */
+.tracking-details {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--light-color);
+    text-align: left;
+}
+.tracking-details h3 {
+    color: var(--dark-color);
+    font-size: 1.2em;
+    margin-top: 0;
+    margin-bottom: 10px;
+    border-bottom: 1px dashed var(--border-color);
+    padding-bottom: 5px;
+}
+.tracking-details p {
+    margin: 5px 0;
+    font-size: 0.9em;
+}
+.tracking-milestones p {
+    color: #555;
+    font-size: 0.85em;
+    margin-left: 15px;
+    position: relative;
+    padding-left: 15px;
+}
+.tracking-milestones p:before {
+    content: "•";
+    color: var(--primary-color);
+    position: absolute;
+    left: 0;
+    top: -2px;
+    font-size: 1.5em;
+    line-height: 1;
+}
+
+/* --- Cancel Order Confirmation Modal Specific Styles --- */
+#cancel-order-modal .modal-content {
+    max-width: 450px; /* Slightly smaller for this modal */
+}
+#cancel-order-modal p {
+    margin-bottom: 20px;
+    font-size: 1.1em;
+}
+#cancel-order-modal #confirm-cancel-order-btn {
+    width: auto;
+    padding: 10px 20px;
+    margin-top: 20px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+#cancel-order-modal #confirm-cancel-order-btn.gray-btn {
+    background-color: #6c757d;
+}
+#cancel-order-modal #confirm-cancel-order-btn.gray-btn:hover {
+    background-color: #5a6268;
+}
+
+
 /* --- Form Styling (General) --- */
+.form-group {
+    margin-bottom: 10px; /* Spacing for each group */
+}
+.form-group label {
+    display: block;
+    margin-bottom: 3px; /* Reduced margin */
+    font-size: 0.85em;
+    color: #555;
+}
+.form-group input,
+.form-group select { /* Added select for cancel reason */
+    width: 100%;
+    padding: 8px 10px; /* Reduced padding */
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    font-size: 0.85em; /* Reduced font size */
+    box-sizing: border-box; /* Include padding in width */
+}
+.form-group input:focus,
+.form-group select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(64, 224, 208, 0.3);
+}
+.form-group input.invalid,
+.form-group select.invalid {
+    border-color: var(--error-color);
+}
 .form-error {
     color: var(--error-color); /* A red color for errors */
     font-size: 0.8em; /* Slightly smaller for inline errors */
