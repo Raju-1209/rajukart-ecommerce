@@ -122,6 +122,20 @@ function hideAllModals() {
     cancelOrderModal.classList.add('hidden');
 }
 
+// Add these two functions to your main.js file, within the "Helper Functions for Modal Management" section:
+
+function showCartModal() {
+    hideAllModals(); // This function will hide all other open modals first
+    cartModal.classList.remove('hidden'); // Then show the cart modal
+    renderCartItems(); // And populate it with current cart items
+}
+
+function showWishlistModal() {
+    hideAllModals(); // This function will hide all other open modals first
+    wishlistModal.classList.remove('hidden'); // Then show the wishlist modal
+    renderWishlistItems(); // And populate it with current wishlist items
+}
+
 function showCheckoutModal() {
     hideAllModals();
     checkoutModal.classList.remove('hidden');
