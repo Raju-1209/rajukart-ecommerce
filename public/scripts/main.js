@@ -1,5 +1,3 @@
-// --- CHUNK 1/11 START ---
-
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
@@ -28,9 +26,6 @@ let userCart = [];      // Stores products in the user's cart (array of product 
 let userWishlist = [];  // Stores products in the user's wishlist (array of product objects)
 let currentProductForCheckout = null; // Stores the product selected via "Buy Now" button
 let productDataCache = []; // Cache for all products fetched from Firestore
-
-// --- CHUNK 1/11 END ---
-// --- CHUNK 2/11 START ---
 
 // --- UI Elements ---
 const userStatusDiv = document.getElementById('user-status');
@@ -87,8 +82,6 @@ const confirmCancelOrderBtn = document.getElementById('confirm-cancel-order-btn'
 const cancelConfirmationMessage = document.getElementById('cancel-confirmation-message');
 const errorCancelReason = document.getElementById('error-cancel-reason');
 
-// --- CHUNK 2/11 END ---
-// --- CHUNK 3/11 START ---
 
 // Checkout Modal Elements
 const checkoutModal = document.getElementById('checkout-modal');
@@ -125,8 +118,8 @@ function hideAllModals() {
     myOrdersModal.classList.add('hidden');
     cartModal.classList.add('hidden');
     wishlistModal.classList.add('hidden');
-    trackOrderModal.classList.add('hidden'); // New: Hide track order modal
-    cancelOrderModal.classList.add('hidden'); // New: Hide cancel order modal
+    trackOrderModal.classList.add('hidden'); // Hide track order modal
+    cancelOrderModal.classList.add('hidden'); // Hide cancel order modal
 }
 
 function showCheckoutModal() {
@@ -148,22 +141,7 @@ function showMyOrdersModal() {
     fetchAndDisplayOrders();
 }
 
-// --- CHUNK 3/11 END ---
-// --- CHUNK 4/11 START ---
-
-function showCartModal() {
-    hideAllModals();
-    cartModal.classList.remove('hidden');
-    renderCartItems();
-}
-
-function showWishlistModal() {
-    hideAllModals();
-    wishlistModal.classList.remove('hidden');
-    renderWishlistItems();
-}
-
-// New: Function to show Track Order Modal
+// Function to show Track Order Modal
 function showTrackOrderModal() {
     hideAllModals();
     trackOrderModal.classList.remove('hidden');
@@ -174,7 +152,7 @@ function showTrackOrderModal() {
     orderTrackingDetailsDiv.classList.add('hidden'); // Hide details initially
 }
 
-// New: Function to show Cancel Order Modal
+// Function to show Cancel Order Modal
 let orderToCancel = null; // Global variable to store the order being cancelled
 
 function showCancelOrderModal(orderId) {
@@ -197,10 +175,6 @@ async function ensureAuthenticatedUser() {
             if (user) {
                 currentUser = user; // Set global currentUser
                 console.log("[Auth] User is already authenticated. UID:", user.uid);
-
-// --- CHUNK 4/11 END ---
-// --- CHUNK 5/11 START ---
-
                 if (user.isAnonymous) {
                     let guestId = localStorage.getItem('localGuestId');
                     if (!guestId) {
@@ -308,9 +282,6 @@ async function loadUserSpecificData() {
     }
 }
 
-// --- CHUNK 5/11 END ---
-// --- CHUNK 6/11 START ---
-
 async function syncCartToFirestore() {
     if (!currentUser) return;
     const cartRef = collection(db, 'users', currentUser.uid, 'cart');
@@ -404,9 +375,6 @@ function removeItemFromCart(productId) {
     updateCartCountBadge();
     renderCartItems();
 }
-
-// --- CHUNK 6/11 END ---
-// --- CHUNK 7/11 START ---
 
 function addToWishlist(product) {
     const existingItem = userWishlist.find(item => item.id === product.id);
@@ -762,6 +730,15 @@ placeOrderButton.addEventListener('click', async () => {
 
         const totalAmountValue = parseFloat(orderTotalAmount.textContent.replace('₹', ''));
 
+        // --- NEW: Generate static delivery dates for the order ---
+        const placedAtTimestamp = Date.now();
+        const placedDate = new Date(placedAtTimestamp);
+        
+        // Shipped: 1-3 days after placed
+        const shippedDate = new Date(placedAtTimestamp + (Math.floor(Math.random() * 3) + 1) * 24 * 60 * 60 * 1000);
+        // Out for Delivery: 3-15 days after placed (total delivery time)
+        const deliveryDate = new Date(placedAtTimestamp + (Math.floor(Math.random() * 13) + 3) * 24 * 60 * 60 * 1000);
+
         const orderData = {
             orderId: orderId,
             userId: currentUser.uid,
@@ -778,7 +755,9 @@ placeOrderButton.addEventListener('click', async () => {
             },
             paymentMethod: selectedPaymentMethod.value,
             orderStatus: 'Placed',
-            createdAt: serverTimestamp()
+            createdAt: serverTimestamp(),
+            shippedAt: shippedDate, // Store generated shipped date
+            outForDeliveryAt: deliveryDate // Store generated delivery date
         };
 
         // Save order to Firestore (under users subcollection for easy retrieval)
@@ -841,6 +820,13 @@ async function fetchAndDisplayOrders() {
             let totalAmount = order.totalAmount ? `₹${order.totalAmount.toFixed(2)}` : 'N/A';
             let orderDate = order.createdAt ? new Date(order.createdAt.toDate()).toLocaleString() : 'N/A';
 
+            let cancelButtonHtml = '';
+            if (order.orderStatus !== 'Cancelled') {
+                cancelButtonHtml = `<button class="cancel-order-btn" data-order-id="${order.orderId}">Cancel Order</button>`;
+            } else {
+                cancelButtonHtml = `<p class="cancelled-status">Order Cancelled</p>`;
+            }
+
             orderItemDiv.innerHTML = `
                 <p class="order-id">Order ID: ${order.orderId}</p>
                 <p>Date: ${orderDate}</p>
@@ -849,11 +835,9 @@ async function fetchAndDisplayOrders() {
                 <p>Payment Method: ${order.paymentMethod}</p>
                 <p>Delivery To: ${order.deliveryAddress.fullName}, ${order.deliveryAddress.address1}, ${order.deliveryAddress.city}</p>
                 <p class="order-total-item">Total: ${totalAmount}</p>
-                <button class="cancel-order-btn" data-order-id="${order.orderId}" ${order.orderStatus === 'Cancelled' ? 'disabled' : ''}>
-                    ${order.orderStatus === 'Cancelled' ? 'Order Cancelled' : 'Cancel Order'}
-                </button>
+                ${cancelButtonHtml}
             `;
-            // Add event listener for the cancel button
+            // Add event listener for the cancel button only if it's visible (i.e., not cancelled)
             if (order.orderStatus !== 'Cancelled') {
                 orderItemDiv.querySelector('.cancel-order-btn').addEventListener('click', (event) => {
                     showCancelOrderModal(event.target.dataset.orderId);
@@ -884,60 +868,37 @@ trackOrderSubmitBtn.addEventListener('click', async () => {
     orderTrackingDetailsDiv.classList.add('hidden');
 
     try {
-        // Try to find the order in the current user's orders first
-        let orderDoc;
+        // Attempt to find the order in the current user's orders
+        let orderDoc = null;
         if (currentUser && currentUser.uid) {
             orderDoc = await getDoc(doc(db, 'users', currentUser.uid, 'orders', orderId));
         }
 
-        // If not found in user's orders, or no current user, simulate tracking
-        if (!orderDoc || !orderDoc.exists) {
-            console.log(`Order ${orderId} not found in current user's data. Simulating tracking...`);
-            // For a real app, this would involve a backend call or a separate public collection
-            // Here, we simulate based on the order ID format.
-            if (orderId.startsWith('RAJU-') && orderId.length === 19 && !isNaN(orderId.substring(5))) {
-                const orderTimestamp = parseInt(orderId.substring(5));
-                const placedDate = new Date(orderTimestamp);
+        if (orderDoc && orderDoc.exists()) {
+            const order = orderDoc.data();
+            trackingOrderIdSpan.textContent = order.orderId;
+
+            if (order.orderStatus === 'Cancelled') {
+                trackOrderMessage.textContent = 'This order has been cancelled.';
+                orderTrackingDetailsDiv.classList.add('hidden'); // Hide date details
+            } else {
+                // Display stored dates if available, otherwise fallback to "N/A" for pending milestones
+                trackingPlacedDateSpan.textContent = order.createdAt ? new Date(order.createdAt.toDate()).toLocaleString() : 'N/A';
+                trackingShippedDateSpan.textContent = order.shippedAt ? new Date(order.shippedAt.toDate()).toLocaleString() : 'N/A';
+                trackingDeliveryDateSpan.textContent = order.outForDeliveryAt ? new Date(order.outForDeliveryAt.toDate()).toLocaleString() : 'N/A';
                 
-                // Simulate Shipped and Delivery dates
-                // Add random days between 1 and 3 for shipping
-                const shippedDate = new new Date(placedDate.getTime() + (Math.floor(Math.random() * 3) + 1) * 24 * 60 * 60 * 1000);
-                // Add random days between 3 and 15 total for delivery from placed date
-                const deliveryDate = new Date(placedDate.getTime() + (Math.floor(Math.random() * 13) + 3) * 24 * 60 * 60 * 1000); // 3 to 15 days total
-
-                trackingOrderIdSpan.textContent = orderId;
-                trackingPlacedDateSpan.textContent = placedDate.toLocaleString();
-                trackingShippedDateSpan.textContent = shippedDate.toLocaleString();
-                trackingDeliveryDateSpan.textContent = deliveryDate.toLocaleString();
-
                 orderTrackingDetailsDiv.classList.remove('hidden');
                 trackOrderMessage.textContent = 'Order found and tracked!';
-            } else {
-                trackOrderMessage.textContent = 'Order not found. Please check the Order ID.';
             }
         } else {
-            // Order found in user's own data
-            const order = orderDoc.data();
-            const placedDate = order.createdAt.toDate(); // Convert Firestore Timestamp to Date
-
-            // For existing orders, if we don't have separate shipped/delivery fields,
-            // we can simulate them based on the placed date.
-            // In a real app, these would be stored in the order document as they happen.
-            const shippedDate = new Date(placedDate.getTime() + (Math.floor(Math.random() * 3) + 1) * 24 * 60 * 60 * 1000);
-            const deliveryDate = new Date(placedDate.getTime() + (Math.floor(Math.random() * 13) + 3) * 24 * 60 * 60 * 1000);
-            
-            trackingOrderIdSpan.textContent = order.orderId;
-            trackingPlacedDateSpan.textContent = placedDate.toLocaleString();
-            trackingShippedDateSpan.textContent = shippedDate.toLocaleString();
-            trackingDeliveryDateSpan.textContent = deliveryDate.toLocaleString();
-            
-            orderTrackingDetailsDiv.classList.remove('hidden');
-            trackOrderMessage.textContent = 'Order found and tracked!';
+            trackOrderMessage.textContent = 'Order not found or does not belong to your account. Please check the Order ID.';
+            orderTrackingDetailsDiv.classList.add('hidden');
         }
 
     } catch (error) {
         console.error("Error tracking order:", error);
         trackOrderMessage.textContent = 'An error occurred while tracking the order. Please try again.';
+        orderTrackingDetailsDiv.classList.add('hidden');
     }
 });
 
@@ -1069,7 +1030,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     closeMyOrdersModalBtn.addEventListener('click', () => myOrdersModal.classList.add('hidden'));
     closeCartModalBtn.addEventListener('click', () => cartModal.classList.add('hidden'));
     closeWishlistModalBtn.addEventListener('click', () => wishlistModal.classList.add('hidden'));
-    closeTrackOrderModalBtn.addEventListener('click', () => trackOrderModal.classList.add('hidden')); // New: Close Track Order
+    closeTrackOrderModalBtn.addEventListener('click', () => trackOrderModal.classList.add('hidden')); 
     closeCancelOrderModalBtn.addEventListener('click', () => {
         cancelOrderModal.classList.add('hidden');
         orderToCancel = null; // Clear the stored order ID
@@ -1109,7 +1070,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     trackOrderIconHeader.addEventListener('click', (e) => {
         e.preventDefault();
-        showTrackOrderModal(); // New: Show Track Order modal
+        showTrackOrderModal(); 
     });
 
     proceedToCheckoutBtn.addEventListener('click', () => {
@@ -1121,4 +1082,3 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initial state for place order button (disabled)
     updatePlaceOrderButtonState();
 });
-// --- CHUNK 7/11 END ---
