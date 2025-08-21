@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RajuKart - Your E-commerce Destination</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/img/r_logo.png"> <!-- Assuming your logo is a .png file in the img folder -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-gray-50">
@@ -52,9 +54,6 @@
                     <h2>My Orders</h2>
                     <button id="close-my-orders-modal" class="modal-close-btn">✕</button>
                 </div>
-                <p id="order-cancellation-status" class="form-error hidden">
-                    <!-- Order cancellation status message appears here -->
-                </p>
                 <div id="orders-list">
                     <!-- Orders will be dynamically loaded here -->
                     <p id="no-orders-message">You have no past orders.</p>
@@ -225,7 +224,7 @@
                 <button>Search</button>
             </div>
             <div class="header-icons">
-                <div class="icon-item">
+                <div class="icon-item" id="wishlist-icon-header"> <!-- Added ID here -->
                     <span class="icon">&#x2764;</span>
                     <span class="icon-text">Wishlist</span>
                 </div>

@@ -35,9 +35,9 @@ const categoriesNav = document.querySelector('.categories-nav');
 const profileText = document.getElementById('profile-text'); // For updating profile name
 
 // Header Icons
-const cartIconHeader = document.getElementById('cart-icon-header');
-const wishlistIconHeader = document.querySelector('.header-icons .icon-item:first-child'); // Target the first icon-item for wishlist
-const trackOrderIconHeader = document.getElementById('track-order-icon-header'); // New: Track Order header icon
+const cartIconHeader = document.getElementById('cart-icon-header'); // Correctly targeting by ID
+const wishlistIconHeader = document.getElementById('wishlist-icon-header'); // Correctly targeting by new ID
+const trackOrderIconHeader = document.getElementById('track-order-icon-header'); // Track Order header icon
 const cartCountBadge = document.getElementById('cart-count');
 
 // Modals
@@ -61,7 +61,7 @@ const ordersListDiv = document.getElementById('orders-list');
 const noOrdersMessage = document.getElementById('no-orders-message');
 
 // Track Order Modal Elements
-const trackOrderModal = document.getElementById('track-order-modal'); // New: Track Order modal
+const trackOrderModal = document.getElementById('track-order-modal');
 const closeTrackOrderModalBtn = document.getElementById('close-track-order-modal');
 const trackOrderIdInput = document.getElementById('track-order-id-input');
 const trackOrderSubmitBtn = document.getElementById('track-order-submit-btn');
@@ -74,7 +74,7 @@ const trackOrderMessage = document.getElementById('track-order-message');
 const errorTrackOrderId = document.getElementById('error-track-order-id');
 
 // Cancel Order Modal Elements
-const cancelOrderModal = document.getElementById('cancel-order-modal'); // New: Cancel Order modal
+const cancelOrderModal = document.getElementById('cancel-order-modal');
 const closeCancelOrderModalBtn = document.getElementById('close-cancel-order-modal');
 const cancelOrderIdDisplay = document.getElementById('cancel-order-id-display');
 const cancelReasonSelect = document.getElementById('cancel-reason-select');
@@ -118,8 +118,8 @@ function hideAllModals() {
     myOrdersModal.classList.add('hidden');
     cartModal.classList.add('hidden');
     wishlistModal.classList.add('hidden');
-    trackOrderModal.classList.add('hidden'); // Hide track order modal
-    cancelOrderModal.classList.add('hidden'); // Hide cancel order modal
+    trackOrderModal.classList.add('hidden');
+    cancelOrderModal.classList.add('hidden');
 }
 
 function showCheckoutModal() {
@@ -756,9 +756,14 @@ placeOrderButton.addEventListener('click', async () => {
             paymentMethod: selectedPaymentMethod.value,
             orderStatus: 'Placed',
             createdAt: serverTimestamp(),
-            shippedAt: shippedDate, // Store generated shipped date
-            outForDeliveryAt: deliveryDate // Store generated delivery date
+            shippedAt: shippedDate, // Store generated shipped date (converted to Firestore Timestamp later)
+            outForDeliveryAt: deliveryDate // Store generated delivery date (converted to Firestore Timestamp later)
         };
+
+        // Convert Date objects to Firestore Timestamps before saving
+        if (orderData.shippedAt instanceof Date) orderData.shippedAt = serverTimestamp(); // Simulate server timestamp on creation
+        if (orderData.outForDeliveryAt instanceof Date) orderData.outForDeliveryAt = serverTimestamp(); // Simulate server timestamp on creation
+
 
         // Save order to Firestore (under users subcollection for easy retrieval)
         await setDoc(doc(db, 'users', currentUser.uid, 'orders', orderId), orderData);
@@ -1063,7 +1068,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         showCartModal();
     });
 
-    wishlistIconHeader.addEventListener('click', (e) => {
+    wishlistIconHeader.addEventListener('click', (e) => { // Now targets by ID
         e.preventDefault();
         showWishlistModal();
     });
