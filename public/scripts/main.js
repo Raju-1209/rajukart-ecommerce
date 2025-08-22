@@ -1,3 +1,5 @@
+// --- CHUNK 1/12 START ---
+
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
@@ -35,10 +37,17 @@ const categoriesNav = document.querySelector('.categories-nav');
 const profileText = document.getElementById('profile-text'); // For updating profile name
 
 // Header Icons
-const cartIconHeader = document.getElementById('cart-icon-header'); // Correctly targeting by ID
-const wishlistIconHeader = document.getElementById('wishlist-icon-header'); // Correctly targeting by new ID
-const trackOrderIconHeader = document.getElementById('track-order-icon-header'); // Track Order header icon
+const cartIconHeader = document.getElementById('cart-icon-header');
+const wishlistIconHeader = document.getElementById('wishlist-icon-header');
+const trackOrderIconHeader = document.getElementById('track-order-icon-header');
 const cartCountBadge = document.getElementById('cart-count');
+
+// Search Bar Elements (NEW)
+const searchInput = document.querySelector('.search-bar input[type="text"]');
+const searchButton = document.querySelector('.search-bar button');
+
+// --- CHUNK 1/12 END ---
+// --- CHUNK 2/12 START ---
 
 // Modals
 const cartModal = document.getElementById('cart-modal');
@@ -82,6 +91,8 @@ const confirmCancelOrderBtn = document.getElementById('confirm-cancel-order-btn'
 const cancelConfirmationMessage = document.getElementById('cancel-confirmation-message');
 const errorCancelReason = document.getElementById('error-cancel-reason');
 
+// --- CHUNK 2/12 END ---
+// --- CHUNK 3/12 START ---
 
 // Checkout Modal Elements
 const checkoutModal = document.getElementById('checkout-modal');
@@ -122,19 +133,8 @@ function hideAllModals() {
     cancelOrderModal.classList.add('hidden');
 }
 
-// Add these two functions to your main.js file, within the "Helper Functions for Modal Management" section:
-
-function showCartModal() {
-    hideAllModals(); // This function will hide all other open modals first
-    cartModal.classList.remove('hidden'); // Then show the cart modal
-    renderCartItems(); // And populate it with current cart items
-}
-
-function showWishlistModal() {
-    hideAllModals(); // This function will hide all other open modals first
-    wishlistModal.classList.remove('hidden'); // Then show the wishlist modal
-    renderWishlistItems(); // And populate it with current wishlist items
-}
+// --- CHUNK 3/12 END ---
+// --- CHUNK 4/12 START ---
 
 function showCheckoutModal() {
     hideAllModals();
@@ -154,6 +154,19 @@ function showMyOrdersModal() {
     myOrdersModal.classList.remove('hidden');
     fetchAndDisplayOrders();
 }
+
+function showCartModal() {
+    hideAllModals();
+    cartModal.classList.remove('hidden');
+    renderCartItems();
+}
+
+function showWishlistModal() {
+    hideAllModals();
+    wishlistModal.classList.remove('hidden');
+    renderWishlistItems();
+}
+
 
 // Function to show Track Order Modal
 function showTrackOrderModal() {
@@ -189,6 +202,10 @@ async function ensureAuthenticatedUser() {
             if (user) {
                 currentUser = user; // Set global currentUser
                 console.log("[Auth] User is already authenticated. UID:", user.uid);
+
+// --- CHUNK 4/12 END ---
+// --- CHUNK 5/12 START ---
+
                 if (user.isAnonymous) {
                     let guestId = localStorage.getItem('localGuestId');
                     if (!guestId) {
@@ -296,6 +313,9 @@ async function loadUserSpecificData() {
     }
 }
 
+// --- CHUNK 5/12 END ---
+// --- CHUNK 6/12 START ---
+
 async function syncCartToFirestore() {
     if (!currentUser) return;
     const cartRef = collection(db, 'users', currentUser.uid, 'cart');
@@ -367,6 +387,8 @@ function updateCartCountBadge() {
     }
 }
 
+// --- CHUNK 6/12 END ---
+// --- CHUNK 7/12 START ---
 
 // --- Cart & Wishlist Actions ---
 function addItemToCart(product) {
@@ -464,6 +486,9 @@ function renderWishlistItems() {
     }
 }
 
+// --- CHUNK 7/12 END ---
+// --- CHUNK 8/12 START ---
+
 // --- Product Display Logic ---
 function createProductCard(product) {
     const card = document.createElement('div');
@@ -487,6 +512,36 @@ function createProductCard(product) {
     return card;
 }
 
+// Function to display products on the page (can be all or filtered)
+function displayProducts(productsToDisplay) {
+    allProductListDiv.innerHTML = ''; // Clear current products
+    if (productsToDisplay.length === 0) {
+        allProductListDiv.innerHTML = '<p>No products found matching your search.</p>';
+    } else {
+        productsToDisplay.forEach(product => {
+            allProductListDiv.appendChild(createProductCard(product));
+        });
+    }
+}
+
+// Function to handle search
+function handleSearch() {
+    const searchTerm = searchInput.value.trim().toLowerCase();
+    let filteredProducts = [];
+
+    if (searchTerm === '') {
+        // If search bar is empty, display all products from cache
+        filteredProducts = productDataCache;
+    } else {
+        // Filter products based on search term (case-insensitive partial match)
+        filteredProducts = productDataCache.filter(product =>
+            product.name.toLowerCase().includes(searchTerm)
+        );
+    }
+    displayProducts(filteredProducts);
+}
+
+
 async function fetchAndDisplayProducts(category = 'all') {
     if (!allProductListDiv || !featuredProductListDiv) return;
 
@@ -504,12 +559,12 @@ async function fetchAndDisplayProducts(category = 'all') {
         }
 
         const productSnapshot = await getDocs(q);
-        // Cache the product data
+        // Cache the product data for search functionality
         productDataCache = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         console.log("[Product Fetch] Raw products array from Firestore:", productDataCache);
 
-        allProductListDiv.innerHTML = '';
+        allProductListDiv.innerHTML = ''; // Clear before displaying
         featuredProductListDiv.innerHTML = '';
 
         if (productDataCache.length === 0) {
@@ -518,10 +573,10 @@ async function fetchAndDisplayProducts(category = 'all') {
             return;
         }
 
-        productDataCache.forEach(product => {
-            allProductListDiv.appendChild(createProductCard(product));
-        });
+        // Display all products by default in the 'All Products' section
+        displayProducts(productDataCache);
 
+        // Display a subset for featured products
         productDataCache.slice(0, 5).forEach(product => {
             featuredProductListDiv.appendChild(createProductCard(product));
         });
@@ -547,6 +602,8 @@ categoriesNav.addEventListener('click', (event) => {
         
         const selectedCategory = target.getAttribute('data-category');
         console.log(`Category selected: ${selectedCategory}`);
+        // When a category is selected, clear search input and display products for that category
+        searchInput.value = ''; // Clear search on category change
         fetchAndDisplayProducts(selectedCategory);
     }
 });
@@ -601,6 +658,9 @@ function renderOrderSummary() {
     orderTotalAmount.textContent = `₹${total.toFixed(2)}`;
 }
 
+
+// --- CHUNK 8/12 END ---
+// --- CHUNK 9/12 START ---
 
 // --- Address Form Validation ---
 function validateAddressForm() {
@@ -806,6 +866,9 @@ backToHomeButton.addEventListener('click', () => {
     hideAllModals(); // Hide confirmation and checkout modal
 });
 
+// --- CHUNK 9/12 END ---
+// --- CHUNK 10/12 START ---
+
 // --- My Orders Flow ---
 async function fetchAndDisplayOrders() {
     if (!currentUser) {
@@ -921,6 +984,9 @@ trackOrderSubmitBtn.addEventListener('click', async () => {
     }
 });
 
+// --- CHUNK 10/12 END ---
+// --- CHUNK 11/12 START ---
+
 // --- Order Cancellation Logic ---
 confirmCancelOrderBtn.addEventListener('click', async () => {
     const reason = cancelReasonSelect.value;
@@ -975,14 +1041,18 @@ confirmCancelOrderBtn.addEventListener('click', async () => {
     }
 });
 
+// --- CHUNK 11/12 END ---
+// --- CHUNK 12/12 START ---
+
 // --- Initial Setup & Event Listeners ---
 document.addEventListener('DOMContentLoaded', async () => {
     await ensureAuthenticatedUser(); // Ensure user is authenticated first
     
-    // Carousel setup (from previous versions, unchanged)
+    // Carousel setup
     const carouselTrack = document.getElementById('carousel-track');
     const carouselIndicatorsContainer = document.getElementById('carousel-indicators');
 
+    // Updated offer images
     const offerImages = [
         '/img/aug-month-offer.png',
         '/img/freedom-offer.png',
@@ -1082,7 +1152,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         showCartModal();
     });
 
-    wishlistIconHeader.addEventListener('click', (e) => { // Now targets by ID
+    wishlistIconHeader.addEventListener('click', (e) => {
         e.preventDefault();
         showWishlistModal();
     });
@@ -1097,6 +1167,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentProductForCheckout = null; 
         startCheckout(); // Call startCheckout without product to indicate cart checkout
     });
+
+    // --- Search Functionality Event Listeners (NEW) ---
+    searchButton.addEventListener('click', handleSearch);
+    searchInput.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            handleSearch();
+        }
+    });
+    // --- End Search Event Listeners ---
+
 
     // Initial state for place order button (disabled)
     updatePlaceOrderButtonState();
