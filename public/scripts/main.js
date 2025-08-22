@@ -577,7 +577,7 @@ async function fetchAndDisplayProducts(category = 'all') {
         displayProducts(productDataCache);
 
         // Display a subset for featured products
-        productDataCache.slice(0, 5).forEach(product => {
+        productDataCache.slice(0, 4).forEach(product => {
             featuredProductListDiv.appendChild(createProductCard(product));
         });
 
@@ -804,14 +804,28 @@ placeOrderButton.addEventListener('click', async () => {
 
         const totalAmountValue = parseFloat(orderTotalAmount.textContent.replace('₹', ''));
 
-        // --- NEW: Generate static delivery dates for the order ---
-        const placedAtTimestamp = Date.now();
-        const placedDate = new Date(placedAtTimestamp);
-        
+        // --- NEW: Generate realistic delivery dates for the order ---
+        const placedAtMillis = Date.now();
+        const placedDate = new Date(placedAtMillis); // This will be stored as serverTimestamp for createdAt
+
         // Shipped: 1-3 days after placed
-        const shippedDate = new Date(placedAtTimestamp + (Math.floor(Math.random() * 3) + 1) * 24 * 60 * 60 * 1000);
-        // Out for Delivery: 3-15 days after placed (total delivery time)
-        const deliveryDate = new Date(placedAtTimestamp + (Math.floor(Math.random() * 13) + 3) * 24 * 60 * 60 * 1000);
+        const shippedDays = Math.floor(Math.random() * 3) + 1; // Random 1, 2, or 3 days
+        const shippedAt = new Date(placedAtMillis + shippedDays * 24 * 60 * 60 * 1000);
+
+        // Out for Delivery: min 1 day after shipped, max 15 days total from placed date
+        // Calculate min/max days *after* shippedDate
+        const minDeliveryDaysAfterShipped = 1;
+        const maxDeliveryDaysFromPlaced = 15;
+        
+        const daysFromPlacedToShipped = shippedDays; // Days already elapsed for shipping
+        const remainingMaxDeliveryDays = maxDeliveryDaysFromPlaced - daysFromPlacedToShipped; // Max days allowed after shipping to stay within 15 total
+        
+        // Ensure remaining max delivery days is at least 1 for sensible calculation
+        const effectiveRemainingMaxDeliveryDays = Math.max(1, remainingMaxDeliveryDays);
+
+        // Random days to delivery after shipped date, within remaining window
+        const deliveryDaysAfterShipped = Math.floor(Math.random() * effectiveRemainingMaxDeliveryDays) + minDeliveryDaysAfterShipped;
+        const outForDeliveryAt = new Date(shippedAt.getTime() + deliveryDaysAfterShipped * 24 * 60 * 60 * 1000);
 
         const orderData = {
             orderId: orderId,
@@ -829,15 +843,11 @@ placeOrderButton.addEventListener('click', async () => {
             },
             paymentMethod: selectedPaymentMethod.value,
             orderStatus: 'Placed',
-            createdAt: serverTimestamp(),
-            shippedAt: shippedDate, // Store generated shipped date (converted to Firestore Timestamp later)
-            outForDeliveryAt: deliveryDate // Store generated delivery date (converted to Firestore Timestamp later)
+            createdAt: serverTimestamp(), // Use server timestamp for creation
+            // Store calculated Date objects as they will be converted to Firestore Timestamps on save
+            shippedAt: shippedAt,
+            outForDeliveryAt: outForDeliveryAt
         };
-
-        // Convert Date objects to Firestore Timestamps before saving
-        if (orderData.shippedAt instanceof Date) orderData.shippedAt = serverTimestamp(); // Simulate server timestamp on creation
-        if (orderData.outForDeliveryAt instanceof Date) orderData.outForDeliveryAt = serverTimestamp(); // Simulate server timestamp on creation
-
 
         // Save order to Firestore (under users subcollection for easy retrieval)
         await setDoc(doc(db, 'users', currentUser.uid, 'orders', orderId), orderData);
